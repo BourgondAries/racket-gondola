@@ -16,6 +16,9 @@
 (define (get-all-webm)
   (with-output-to-string (lambda ()
                            (system/exit-code "/usr/bin/env bash -c 'find music -maxdepth 1 -name \"*.webm\" -type f | sed s/^music//' | sort"))))
+(define (get-random-webm-raw)
+  (with-output-to-string (lambda ()
+                           (system/exit-code "/usr/bin/env bash -c 'find music -maxdepth 1 -name \"*.webm\" -type f | shuf | head -n 1'"))))
 (define (get-random-webm)
   (with-output-to-string (lambda ()
                            (system/exit-code "/usr/bin/env bash -c 'find music -maxdepth 1 -name \"*.webm\" -type f | shuf | head -n 1 | sed s/^music//'"))))
@@ -26,6 +29,9 @@
 
 (define (get-random-page)
   (get-random-webm))
+
+(define (get-random-page-raw)
+  (get-random-webm-raw))
 
 (define (serve-post req post)
   (if (not (file-exists? (string-append "music/" post)))
@@ -124,6 +130,7 @@
 (define-values (blog-dispatch blog-url)
   (dispatch-rules
     (("random") (lambda _ (redirect-to (get-random-page))))
+    (("random-raw") (lambda _ (redirect-to (get-random-page-raw))))
     (("list") list-all)
     (((string-arg)) serve-post)
     (else (lambda _ (redirect-to default-video)))))
