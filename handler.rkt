@@ -2,10 +2,7 @@
 
 (provide blog-dispatch file-not-found)
 
-(require (for-syntax racket/list)
-         (for-syntax racket/pretty)
-         (for-syntax racket/syntax)
-         (for-syntax syntax/parse)
+(require (for-syntax racket/list racket/pretty racket/syntax syntax/parse)
          web-server/dispatch
          web-server/servlet
          web-server/servlet-env)
