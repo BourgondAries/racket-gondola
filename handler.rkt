@@ -172,18 +172,17 @@
           finalizer)]))
 
 (define (link-all-webm)
-  (let-values ([(sum-views table)
-    (for/fold ([sum-views 0]
-               [table empty])
-              ([x (get-all-webm)])
-        (let ([views (get-webm-view-count x)])
-          (values
-            (with-handlers ([identity (lambda (e) sum-views)])
-              (+ (string->number views) sum-views))
-            (cons `(tr (th (p (a ([href ,x]) ,x)) (th ,views))) table)
-      )))])
-      (cons `(tr (th "Total") (th ,(number->string sum-views))) table)
-    ))
+  (for/fold-let ([sum-views 0]
+                 [table empty])
+                ([x (get-all-webm)])
+    (let ([views (get-webm-view-count x)])
+      (values
+        (with-handlers ([identity (lambda (e) sum-views)])
+          (+ (string->number views) sum-views))
+        (cons `(tr (th (p (a ([href ,x]) ,x)) (th ,views))) table)))
+    (cons `(tr (th "Total") (th ,(number->string sum-views)))
+          (cons '(tr (th "-------") (th "-----"))
+                (reverse table)))))
 
 (define-values (blog-dispatch blog-url)
   (dispatch-rules
