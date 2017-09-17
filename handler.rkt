@@ -4,6 +4,8 @@
 
 (require (for-syntax racket/list)
          (for-syntax racket/pretty)
+         (for-syntax racket/syntax)
+         (for-syntax syntax/parse)
          web-server/dispatch
          web-server/servlet
          web-server/servlet-env)
@@ -161,11 +163,27 @@
          )
   )))
 
+(define-syntax (for/fold-let stx)
+  (syntax-parse stx
+    [(_ ([entry value] ...) others ... finalizer)
+     #'(let-values ([(entry ...)
+          (for/fold ([entry value] ...)
+                    others ...)])
+          finalizer)]))
+
 (define (link-all-webm)
-  (map
-    (lambda (x)
-      `(tr (th (p (a ([href ,x]) ,x)) (th ,(get-webm-view-count x)))))
-    (get-all-webm)))
+  (let-values ([(sum-views table)
+    (for/fold ([sum-views 0]
+               [table empty])
+              ([x (get-all-webm)])
+        (let ([views (get-webm-view-count x)])
+          (values
+            (with-handlers ([identity (lambda (e) sum-views)])
+              (+ (string->number views) sum-views))
+            (cons `(tr (th (p (a ([href ,x]) ,x)) (th ,views))) table)
+      )))])
+      (cons `(tr (th "Total") (th ,(number->string sum-views))) table)
+    ))
 
 (define-values (blog-dispatch blog-url)
   (dispatch-rules
