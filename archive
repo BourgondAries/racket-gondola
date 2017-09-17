@@ -1,0 +1,4 @@
+#! /usr/bin/env bash
+
+cd htdocs/video/
+zip ../archive/gondolas.zip *

@@ -1,0 +1,5 @@
+#! /usr/bin/env bash
+
+docker build . -t music
+
+docker run --rm -e HOST_UID=$UID -e HOST_PASS='nani sore desu ka' -v $HOME/stuf:/home/user/stuf -v $(pwd):/home/user/racket -p 8002:8000 music

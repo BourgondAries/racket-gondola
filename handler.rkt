@@ -13,28 +13,59 @@
 (define (serve-index req)
   (serve-post req default-video))
 
+(define (select-random lst)
+  (let ([len (length lst)])
+    (list-ref lst (random len))))
+
 (define (get-all-webm)
-  (with-output-to-string (lambda ()
-                           (system/exit-code "/usr/bin/env bash -c 'find music -maxdepth 1 -name \"*.webm\" -type f | sed s/^music//' | sort"))))
-(define (get-random-webm-raw)
-  (with-output-to-string (lambda ()
-                           (system/exit-code "/usr/bin/env bash -c 'find music -maxdepth 1 -name \"*.webm\" -type f | shuf | head -n 1'"))))
+  (map path->string (directory-list "video")))
+
+(define (increment-webm-view-counter webm)
+  (let ([target (build-path "statistics" webm)])
+    (call-with-file-lock/timeout target 'exclusive
+      (lambda ()
+        (if (file-exists? target)
+          (with-input-from-file target
+            (lambda ()
+              (let ([increment (add1 (string->number (read-line)))])
+                (with-output-to-file target
+                  (lambda ()
+                    (write increment)
+                    (number->string increment)) #:exists 'truncate))))
+          (with-output-to-file target
+            (lambda () (write 1)
+              "1")
+            #:exists 'truncate)))
+      (lambda ()
+        (displayln "N/A")))))
+
 (define (get-random-webm)
-  (with-output-to-string (lambda ()
-                           (system/exit-code "/usr/bin/env bash -c 'find music -maxdepth 1 -name \"*.webm\" -type f | shuf | head -n 1 | sed s/^music//'"))))
+  (select-random (get-all-webm)))
+
+(define (get-webm-view-count webm)
+  (let ([target (build-path "statistics" webm)])
+    (call-with-file-lock/timeout target 'exclusive
+                                 (lambda ()
+                                   (if (file-exists? target)
+                                     (let ([value (with-input-from-file target read-line)])
+                                       (if (eof-object? value)
+                                         "Corrupted file"
+                                         value))
+                                     "0"))
+                                 (lambda ()
+                                   "N/A"))))
 
 (define (count-webms)
-  (with-output-to-string (lambda ()
-                           (system/exit-code "/usr/bin/env bash -c 'find music -maxdepth 1 -name \"*.webm\" -type f | wc -l | xargs echo -n'"))))
+  (number->string (length (get-all-webm))))
 
 (define (get-random-page)
   (get-random-webm))
 
 (define (get-random-page-raw)
-  (get-random-webm-raw))
+  (string-append "/video/" (get-random-webm)))
 
 (define (serve-post req post)
-  (if (not (file-exists? (string-append "music/" post)))
+  (if (not (file-exists? (string-append "video/" post)))
     (redirect-to (get-random-page))
     (response/xexpr
       #:preamble #"<!DOCTYPE html>"
@@ -47,7 +78,7 @@
           (link ([rel "icon"] [type "image/png"] [href "/images/musings_symbol_64.png"]))
           (link ([rel "stylesheet"] [type "text/css"] [href "/css/reset.css"]))
           (style
-            "button { background: rgba(32, 40, 45, 0.3); border: 1px solid #1C252B; color: lightgrey; font-size: 1em; height: 100%; left: 0%; position: relative; transform: translate(0%, 0); width: 33.333%; }
+            "button { background: rgba(32, 40, 45, 0.3); border: 1px solid #1C252B; color: lightgrey; font-size: 1em; height: 100%; left: 0%; position: relative; transform: translate(0%, 0); vertical-align: top; white-space: normal; width: 33.2%; }
             button:hover { cursor: pointer; }
             .blog { background-image: url(\"/images/sharding.jpg\"); background-size: 100%; background-repeat: y; position: relative; }
             .video { height: 88vh; }
@@ -57,7 +88,7 @@
           (body ([class "blog"])
                 (div ([class "video"])
                      (video ([id "video"] [width "100%"] [height "100%"] [onclick "toggle_pause();"] [autoplay ""] [controls ""])
-                            (source ((src ,(string-append "/music/" post)) (type "video/webm")))))
+                            (source ((src ,(string-append "/video/" post)) (type "video/webm")))))
                 (script ([type "text/javascript"])
                         "document.getElementById('video').addEventListener('ended', ended, false);
                         function ended(handle) {
@@ -80,7 +111,7 @@
                         ")
                 (div ([class "bottom"])
                      (button ([type "button"] [onclick "ended();"]) "Next (random)")
-                     (button ([type "button"] [onclick "showcomment();"]) "Show comments")
+                     (button ([type "button"] [onclick "showcomment();"]) "Views: " ,(increment-webm-view-counter post) (br) "Show comments")
                      (button ([type "button"] [onclick "location.href='/list';"])
                             ,(string-append "All" " " "(" (count-webms) ")")))
                 (div ([id "disqus_thread"] [hidden ""]))
@@ -113,19 +144,28 @@
          (link ([rel "icon"] [type "image/png"] [href "/images/musings_symbol_32.png"]))
          (link ([rel "icon"] [type "image/png"] [href "/images/musings_symbol_64.png"]))
          (link ([rel "stylesheet"] [type "text/css"] [href "/css/reset.css"])))
+         (style
+           "tr:nth-child(even) {
+             background-color: #EEEEEE;
+           }")
        (body
-         (a ((href "/music/gondolas.zip")) "Download All (zip file)")
+         (a ([href "/archive/gondolas.zip"]) "Download All (zip file)")
+         (p "Public API: " (a ([href "/random"]) "/random") " redirects to a random gondola. " (a ([href "/random-raw"]) "/random-raw") " redirects to a random gondola video stream.")
+         (p "N/A on the view count indicates high load, so the view count is not loaded.")
+         (p "Gondola suggestions: macocio@gmail.com")
          (br)
-         (br)
-         ,@(link-all-webm))
+         (table
+           (tr (th "Gondola") (th "Views"))
+           (tr (th "-------") (th "-----"))
+           ,@(link-all-webm))
+         )
   )))
 
 (define (link-all-webm)
   (map
     (lambda (x)
-      `(p (a ([href ,x]) ,x)))
-    (string-split (get-all-webm) "\n")))
-
+      `(tr (th (p (a ([href ,x]) ,x)) (th ,(get-webm-view-count x)))))
+    (get-all-webm)))
 
 (define-values (blog-dispatch blog-url)
   (dispatch-rules
