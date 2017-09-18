@@ -63,6 +63,9 @@
 (define (get-random-page-raw)
   (string-append "/video/" (get-random-webm)))
 
+(define (random-hello)
+  (vector-ref hello (random (vector-length hello))))
+
 (define (serve-post req post)
   (if (not (file-exists? (string-append "video/" post)))
     (redirect-to (get-random-page))
@@ -109,7 +112,7 @@
                         }
                         ")
                 (div ([class "bottom"])
-                     (button ([type "button"] [onclick "ended();"]) "Next (random)")
+                     (button ([type "button"] [onclick "ended();"]) ,(random-hello))
                      (button ([type "button"] [onclick "showcomment();"]) "Views: " ,(increment-webm-view-counter post) (br) "Show comments")
                      (button ([type "button"] [onclick "location.href='/list';"])
                             ,(string-append "All" " " "(" (count-webms) ")")))
