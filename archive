@@ -1,4 +1,6 @@
 #! /usr/bin/env bash
 
 cd htdocs/video/
+rm ../statistics/*
 zip ../archive/gondolas.zip *
+

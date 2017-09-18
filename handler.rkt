@@ -150,7 +150,7 @@
        (body
          (a ([href "/archive/gondolas.zip"]) "Download All (zip file)")
          (p "Public API: " (a ([href "/random"]) "/random") " redirects to a random gondola. " (a ([href "/random-raw"]) "/random-raw") " redirects to a random gondola video stream.")
-         (p "N/A on the view count indicates high load, so the view count is not loaded.")
+         (p "N/A on the view count indicates high load, so the view count is not loaded. View count since 2017-09-17T18:42:49+0200")
          (p "Gondola suggestions: macocio@gmail.com")
          (br)
          (table
