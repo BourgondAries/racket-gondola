@@ -29,6 +29,7 @@ user user
 run raco pkg install reloadable
 user root
 run userdel user
+run raco pkg install threading <<< a
 
 volume [ "/home/user" ]
 workdir "/home/user"

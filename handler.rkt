@@ -112,7 +112,7 @@
                         }
                         ")
                 (div ([class "bottom"])
-                     (button ([type "button"] [onclick "ended();"]) ,(random-hello))
+                     (button ([type "button"] [onclick "ended();"]) "Next (random)" (br) ,(random-hello))
                      (button ([type "button"] [onclick "showcomment();"]) "Views: " ,(increment-webm-view-counter post) (br) "Show comments")
                      (button ([type "button"] [onclick "location.href='/list';"])
                             ,(string-append "All" " " "(" (count-webms) ")")))
