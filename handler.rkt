@@ -156,12 +156,8 @@
          (p "N/A on the view count indicates high load, so the view count is not loaded. View count since 2017-09-17T18:42:49+0200")
          (p "Gondola suggestions: macocio@gmail.com")
          (br)
-         (table
-           (tr (th "Gondola") (th "Views"))
-           (tr (th "-------") (th "-----"))
-           ,@(link-all-webm))
-         )
-  )))
+         ,@(create-list-table)
+  ))))
 
 (define-syntax (for/fold-let stx)
   (syntax-parse stx
@@ -171,7 +167,47 @@
                     others ...)])
           finalizer)]))
 
-(define (link-all-webm)
+(define (create-list-table)
+  `(
+    (table ((style "display: inline-block;"))
+      (tr (th "Gondola (by name)") (th "Views"))
+      (tr (th "-------") (th "-----"))
+      ,@(webm-table-alphabetical)
+    )
+    (table ((style "display: inline-block;"))
+      (tr (th "Gondola (by views)") (th "Views"))
+      (tr (th "-------") (th "-----"))
+      ,@(webm-table-by-views))))
+
+(define (numeric-compare x y)
+  (cond
+    ([< x y] 'less)
+    ([= x y] 'equal)
+    ([> x y] 'greater)))
+
+(define (compare-number-strings x y)
+  (numeric-compare
+    (with-handlers ([identity (lambda e 0)])
+      (string->number x))
+    (with-handlers ([identity (lambda e 0)])
+      (string->number y))))
+
+(define (compare-number-strings-then-name x y)
+  (match (compare-number-strings (second x) (second y))
+    ('less #t)
+    ('equal (string>=? (first x) (second x)))
+    ('greater #f)))
+
+(define (tabulate-webm x)
+  `(tr (th (a ([href ,(first x)]) ,(first x))) (th ,(second x))))
+
+(define (webm-table-by-views)
+  (webm-table compare-number-strings-then-name))
+
+(define (webm-table-alphabetical)
+  (webm-table string<=? #:key first))
+
+(define (get-all-webm-with-views)
   (for/fold-let ([sum-views 0]
                  [table empty])
                 ([x (get-all-webm)])
@@ -179,10 +215,15 @@
       (values
         (with-handlers ([identity (lambda (e) sum-views)])
           (+ (string->number views) sum-views))
-        (cons `(tr (th (p (a ([href ,x]) ,x)) (th ,views))) table)))
-    (cons `(tr (th "Total") (th ,(number->string sum-views)))
-          (cons '(tr (th "-------") (th "-----"))
-                (reverse table)))))
+        (cons (list x views) table)))
+    (values sum-views table)))
+
+(define (webm-table sorter #:key [key identity])
+  (let-values ([(views webms) (get-all-webm-with-views)])
+    (let ([sorted (sort webms sorter #:key key)])
+      (cons `(tr (th "Total") (th ,(number->string views)))
+        (cons '(tr (th "-------") (th "-----"))
+          (map tabulate-webm sorted))))))
 
 (define-values (blog-dispatch blog-url)
   (dispatch-rules
