@@ -112,10 +112,10 @@
                         }
                         ")
                 (div ([class "bottom"])
-                     (button ([type "button"] [onclick "ended();"]) "Next (random)" (br) ,(random-hello))
-                     (button ([type "button"] [onclick "showcomment();"]) "Views: " ,(increment-webm-view-counter post) (br) "Show comments")
+                     (button ([type "button"] [onclick "ended();"]) ,(random-hello) (br) "Next (random)")
+                     (button ([type "button"] [onclick "showcomment();"]) ,(increment-webm-view-counter post) " views" (br) "Show comments")
                      (button ([type "button"] [onclick "location.href='/list';"])
-                            ,(string-append "All" " " "(" (count-webms) ")")))
+                            ,(string-append (count-webms) " Gondolas") (br) "Show All"))
                 (div ([id "disqus_thread"] [hidden ""]))
                 (script
                   "/**
