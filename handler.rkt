@@ -168,16 +168,15 @@
           finalizer)]))
 
 (define (create-list-table)
-  `(
-    (table ((style "display: inline-block;"))
-      (tr (th "Gondola (by name)") (th "Views"))
-      (tr (th "-------") (th "-----"))
-      ,@(webm-table-alphabetical)
-    )
-    (table ((style "display: inline-block;"))
-      (tr (th "Gondola (by views)") (th "Views"))
-      (tr (th "-------") (th "-----"))
-      ,@(webm-table-by-views))))
+  (let-values ([(views webms) (get-all-webm-with-views)])
+    `((table ((style "display: inline-block;"))
+        (tr (th "Gondola (by name)") (th "Views"))
+        (tr (th "-------") (th "-----"))
+        ,@(webm-table-alphabetical views webms))
+      (table ((style "display: inline-block;"))
+        (tr (th "Gondola (by views)") (th "Views"))
+        (tr (th "-------") (th "-----"))
+        ,@(webm-table-by-views views webms)))))
 
 (define (numeric-compare x y)
   (cond
@@ -201,11 +200,11 @@
 (define (tabulate-webm x)
   `(tr (th (a ([href ,(first x)]) ,(first x))) (th ,(second x))))
 
-(define (webm-table-by-views)
-  (webm-table compare-number-strings-then-name))
+(define (webm-table-by-views views webms)
+  (webm-table views webms compare-number-strings-then-name))
 
-(define (webm-table-alphabetical)
-  (webm-table string<=? #:key first))
+(define (webm-table-alphabetical views webms)
+  (webm-table views webms string<=? #:key first))
 
 (define (get-all-webm-with-views)
   (for/fold-let ([sum-views 0]
@@ -218,12 +217,11 @@
         (cons (list x views) table)))
     (values sum-views table)))
 
-(define (webm-table sorter #:key [key identity])
-  (let-values ([(views webms) (get-all-webm-with-views)])
-    (let ([sorted (sort webms sorter #:key key)])
-      (cons `(tr (th "Total") (th ,(number->string views)))
-        (cons '(tr (th "-------") (th "-----"))
-          (map tabulate-webm sorted))))))
+(define (webm-table views webms sorter #:key [key identity])
+  (let ([sorted (sort webms sorter #:key key)])
+    (cons `(tr (th "Total") (th ,(number->string views)))
+      (cons '(tr (th "-------") (th "-----"))
+        (map tabulate-webm sorted)))))
 
 (define-values (blog-dispatch blog-url)
   (dispatch-rules
