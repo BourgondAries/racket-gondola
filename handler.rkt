@@ -3,6 +3,7 @@
 (provide blog-dispatch file-not-found)
 
 (require (for-syntax racket/list racket/pretty racket/syntax syntax/parse)
+         racket/date
          web-server/dispatch
          web-server/servlet
          web-server/servlet-env)
@@ -169,14 +170,24 @@
 
 (define (create-list-table)
   (let-values ([(views webms) (get-all-webm-with-views)])
-    `((table ((style "display: inline-block;"))
-        (tr (th "Gondola (by name)") (th "Views"))
-        (tr (th "-------") (th "-----"))
-        ,@(webm-table-alphabetical views webms))
-      (table ((style "display: inline-block;"))
-        (tr (th "Gondola (by views)") (th "Views"))
-        (tr (th "-------") (th "-----"))
-        ,@(webm-table-by-views views webms)))))
+    (let ([times (sort (map (lambda (x)
+                              (list (first x) (file-or-directory-modify-seconds (build-path "video" (first x)))))
+                            webms) > #:key second)])
+      `((p "Recently added Gondolas")
+        (div ((style "border: 1px solid black; height: 10vh; min-height: 1em; overflow-y: scroll;"))
+          (table
+            ,@(map (lambda (x)
+                     `(tr (th ,(date->string (seconds->date (second x)) #t)) (th (a ((href ,(first x))) ,(first x)))))
+                   times)))
+        (br)
+        (table ((style "display: inline-block;"))
+          (tr (th "Gondola (by name)") (th "Views"))
+          (tr (th "-------") (th "-----"))
+          ,@(webm-table-alphabetical views webms))
+        (table ((style "display: inline-block;"))
+          (tr (th "Gondola (by views)") (th "Views"))
+          (tr (th "-------") (th "-----"))
+          ,@(webm-table-by-views views webms))))))
 
 (define (numeric-compare x y)
   (cond
