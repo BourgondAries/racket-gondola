@@ -168,26 +168,54 @@
                     others ...)])
           finalizer)]))
 
+(define-syntax (time-ago stx)
+  (syntax-parse stx
+    [(_ value (limit singular plural) ... (zero singular* plural*))
+     #'(cond
+          ([> (truncate (/ value limit)) 0] (let ([actual (exact-truncate (truncate (/ value limit)))])
+                                              (string-append (number->string actual)
+                                                             (match actual
+                                                               (1 singular)
+                                                               (_ plural))))) ...
+          (else (match value
+                       (0 zero)
+                       (1 (string-append (number->string (exact-truncate value)) singular*))
+                       (_ (string-append (number->string (exact-truncate value)) plural*)))))
+        ]))
+
+(define (compute-time-ago diff)
+  (time-ago diff
+            [(* 3600 24 365.25) " year ago" " years ago"]
+            [(* 3600 24 30.44) " month ago" " months ago"]
+            [(* 3600 24 7) " week ago" " weeks ago"]
+            [(* 3600 24) " day ago" " days ago"]
+            [(* 3600) " hour ago" " hours ago"]
+            [(* 60) " minute ago" " minutes ago"]
+            ["Just now" " second ago" " seconds ago"]))
+
 (define (create-list-table)
   (let-values ([(views webms) (get-all-webm-with-views)])
     (let ([times (sort (map (lambda (x)
                               (list (first x) (file-or-directory-modify-seconds (build-path "video" (first x)))))
                             webms) > #:key second)])
-      `((p "Recently added Gondolas")
-        (div ((style "border: 1px solid black; height: 10vh; min-height: 1em; overflow-y: scroll;"))
-          (table
-            ,@(map (lambda (x)
-                     `(tr (th ,(date->string (seconds->date (second x)) #t)) (th (a ((href ,(first x))) ,(first x)))))
-                   times)))
-        (br)
-        (table ((style "display: inline-block;"))
-          (tr (th "Gondola (by name)") (th "Views"))
-          (tr (th "-------") (th "-----"))
-          ,@(webm-table-alphabetical views webms))
-        (table ((style "display: inline-block;"))
-          (tr (th "Gondola (by views)") (th "Views"))
-          (tr (th "-------") (th "-----"))
-          ,@(webm-table-by-views views webms))))))
+      (let ([current-time (current-seconds)])
+        `((p "Recently added Gondolas")
+          (div ((style "border: 1px solid black; height: 10vh; min-height: 1em; overflow-y: scroll;"))
+            (table
+              ,@(map (lambda (x)
+                       `(tr (th ,(compute-time-ago (- current-time (second x))))
+                            (th (a ((href ,(first x))) ,(first x)))
+                            (th ,(date->string (seconds->date (second x)) #t))))
+                     times)))
+          (br)
+          (table ((style "display: inline-block;"))
+            (tr (th "Gondola (by name)") (th "Views"))
+            (tr (th "-------") (th "-----"))
+            ,@(webm-table-alphabetical views webms))
+          (table ((style "display: inline-block;"))
+            (tr (th "Gondola (by views)") (th "Views"))
+            (tr (th "-------") (th "-----"))
+            ,@(webm-table-by-views views webms)))))))
 
 (define (numeric-compare x y)
   (cond
