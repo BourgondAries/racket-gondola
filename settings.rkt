@@ -4,6 +4,9 @@
 
 (define default-video "/FrontPage.webm")
 
+(define disqus-site "http://gondola.stravers.net/")
+; (define disqus-site "http://localhost:8000/")
+
 (define hello
   #("Right-click -> Loop"
     "Do you like these videos too?"

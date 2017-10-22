@@ -108,8 +108,19 @@
                             }
                         }")
                 (script ([type "text/javascript"])
-                        "function showcomment(handle) {
-                            document.getElementById('disqus_thread').style.display = 'block';
+                        "
+                        var showing = false;
+                        function showcomment(handle) {
+                            if (showing) {
+                              document.getElementById('disqus_thread').style.display = 'none';
+                            } else {
+                              if (!loaded_disqus) {
+                                load_disqus();
+                                loaded_disqus = true;
+                              }
+                              document.getElementById('disqus_thread').style.display = 'block';
+                            }
+                            showing = !showing;
                         }
                         ")
                 (div ([class "bottom"])
@@ -119,21 +130,25 @@
                             ,(string-append (count-webms) " Gondolas") (br) "Show All"))
                 (div ([id "disqus_thread"] [hidden ""]))
                 (script
-                  "/**
-                  *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
-                  *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables*/
-                  /*
-                  var disqus_config = function () {
-                    this.page.url = \"gondola\";  // Replace PAGE_URL with your page's canonical URL variable
-                    this.page.identifier = \"" ,post \""; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
-                  };
-                  */
-                  (function() { // DON'T EDIT BELOW THIS LINE
-                    var d = document, s = d.createElement('script');
-                    s.src = '//evo-1.disqus.com/embed.js';
-                    s.setAttribute('data-timestamp', +new Date());
-                    (d.head || d.body).appendChild(s);
-                  })();")
+                  "
+                  var loaded_disqus = false;
+                  function load_disqus() {
+                    /**
+                    *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+                    *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables*/
+                    /*
+                    var disqus_config = function () {
+                      this.page.url = \"" ,disqus-site "\";  // Replace PAGE_URL with your page's canonical URL variable
+                      this.page.identifier = \"" ,post "\"; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+                    };
+                    */
+                    (function() { // DON'T EDIT BELOW THIS LINE
+                      var d = document, s = d.createElement('script');
+                      s.src = '//evo-1.disqus.com/embed.js';
+                      s.setAttribute('data-timestamp', +new Date());
+                      (d.head || d.body).appendChild(s);
+                    })();
+                  }")
                 (noscript "Please enable JavaScript to view the " (a ([href "https://disqus.com/?ref_noscript"]) "comments powered by Disqus."))))))))
 
 (define (list-all req)
