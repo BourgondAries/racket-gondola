@@ -86,6 +86,7 @@
             .blog { background-image: url(\"/images/sharding.jpg\"); background-size: 100%; background-repeat: y; position: relative; }
             .video { height: 88vh; }
             .bottom { color: white; font-family: arial; height: 10vh; margin-bottom: 1vh; margin-top: 1vh; margin-left: 1vw; margin-right: 1vw; }
+            #disqus_comments { color: inherit; cursor: default; pointer-events: none; text-decoration: none; }
             #disqus_thread { background: rgba(64, 80, 90, 0.2); padding: 0 1vw 0 1vw; }")
           (title "GondolaArchive")
           (body ([class "blog"])
@@ -125,7 +126,10 @@
                         ")
                 (div ([class "bottom"])
                      (button ([type "button"] [onclick "ended();"]) ,(random-hello) (br) "Next (random)")
-                     (button ([type "button"] [onclick "showcomment();"]) ,(increment-webm-view-counter post) " views" (br) "Show comments")
+                     (button ([type "button"] [onclick "showcomment();"])
+                             ,(increment-webm-view-counter post) " views" (br)
+                             "Show "
+                             (a ([id "disqus_comments"] [href ,(string-append disqus-site post "#disqus_thread")]) "(loading) Comments"))
                      (button ([type "button"] [onclick "location.href='/list';"])
                             ,(string-append (count-webms) " Gondolas") (br) "Show All"))
                 (div ([id "disqus_thread"] [hidden ""]))
@@ -149,6 +153,7 @@
                       (d.head || d.body).appendChild(s);
                     })();
                   }")
+                (script ([id "dsq-count-scr"] [src "//evo-1.disqus.com/count.js"] [async ""]))
                 (noscript "Please enable JavaScript to view the " (a ([href "https://disqus.com/?ref_noscript"]) "comments powered by Disqus."))))))))
 
 (define (list-all req)
