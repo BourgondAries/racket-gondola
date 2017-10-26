@@ -203,6 +203,20 @@
                        (_ (string-append (number->string (exact-truncate value)) plural*)))))
         ]))
 
+(define-syntax (list-let stx)
+  (syntax-parse stx
+    [(self variable:expr (name:id names:id ...+) code:expr ...+)
+     #'(let ([name (first variable)])
+         (self (rest variable) (names ...) code ...))]
+    [(_ variable:expr (name:id) code:expr ...+)
+     #'(let ([name (first variable)])
+         code ...)]))
+
+(define-syntax (lambda-list-let stx)
+  (syntax-parse stx
+    [(_ (names:id ...+) code:expr ...+)
+     #'(lambda (x) (list-let x (names ...) code ...))]))
+
 (define (compute-time-ago diff)
   (time-ago diff
             [(* 3600 24 365.25) " year ago" " years ago"]
@@ -215,17 +229,17 @@
 
 (define (create-list-table)
   (let-values ([(views webms) (get-all-webm-with-views)])
-    (let ([times (sort (map (lambda (x)
-                              (list (first x) (file-or-directory-modify-seconds (build-path "video" (first x)))))
+    (let ([times (sort (map (lambda-list-let (filename)
+                              (list filename (file-or-directory-modify-seconds (build-path "video" filename))))
                             webms) > #:key second)])
       (let ([current-time (current-seconds)])
         `((p "Recently added Gondolas")
           (div ((style "border: 1px solid black; height: 10vh; min-height: 1em; overflow-y: scroll;"))
             (table
-              ,@(map (lambda (x)
-                       `(tr (th ,(compute-time-ago (- current-time (second x))))
-                            (th (a ((href ,(first x))) ,(first x)))
-                            (th ,(date->string (seconds->date (second x)) #t))))
+              ,@(map (lambda-list-let (filename views)
+                       `(tr (th ,(compute-time-ago (- current-time views)))
+                            (th (a ((href ,filename)) ,filename))
+                            (th ,(date->string (seconds->date views) #t))))
                      times)))
           (br)
           (table ((style "display: inline-block;"))
@@ -256,8 +270,9 @@
     ('equal (string>=? (first x) (second x)))
     ('greater #f)))
 
-(define (tabulate-webm x)
-  `(tr (th (a ([href ,(first x)]) ,(first x))) (th ,(second x))))
+(define tabulate-webm
+  (lambda-list-let (filename views)
+    `(tr (th (a ([href ,filename]) ,filename)) (th ,views))))
 
 (define (webm-table-by-views views webms)
   (webm-table views webms compare-number-strings-then-name))
