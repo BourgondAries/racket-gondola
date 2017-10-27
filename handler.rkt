@@ -87,7 +87,7 @@
             .video { height: 88vh; }
             .bottom { color: white; font-family: arial; height: 10vh; margin-bottom: 1vh; margin-top: 1vh; margin-left: 1vw; margin-right: 1vw; }
             #disqus_comments { color: inherit; cursor: default; pointer-events: none; text-decoration: none; }
-            #disqus_thread { background: rgba(64, 80, 90, 0.2); padding: 0 1vw 0 1vw; }")
+            #disqus_thread { background: rgba(0, 0, 0, 0.8); padding: 0 1vw 0 1vw; }")
           (title "GondolaArchive")
           (body ([class "blog"])
                 (div ([class "video"])
