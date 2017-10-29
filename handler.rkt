@@ -302,6 +302,7 @@
     (("random") (lambda _ (redirect-to (get-random-page))))
     (("random-raw") (lambda _ (redirect-to (get-random-page-raw))))
     (("list") list-all)
+    (("favicon.ico") (lambda _ (redirect-to "/images/musings_symbol_128.png" permanently)))
     (((string-arg)) serve-post)
     (else (lambda _ (redirect-to default-video)))))
 
