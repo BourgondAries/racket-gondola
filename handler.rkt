@@ -67,6 +67,9 @@
 (define (random-hello)
   (vector-ref hello (random (vector-length hello))))
 
+(define (strip-extension-webm str)
+  (string-trim str ".webm" #:left? false))
+
 (define (serve-post req post)
   (if (not (file-exists? (string-append "video/" post)))
     (redirect-to (get-random-page))
@@ -88,7 +91,7 @@
             .bottom { color: white; font-family: arial; height: 10vh; margin-bottom: 1vh; margin-top: 1vh; margin-left: 1vw; margin-right: 1vw; }
             #disqus_comments { color: inherit; cursor: default; pointer-events: none; text-decoration: none; }
             #disqus_thread { background: rgba(0, 0, 0, 0.8); padding: 0 1vw 0 1vw; }")
-          (title "GondolaArchive")
+          (title ,(string-append (strip-extension-webm post) " - GondolaArchive"))
           (body ([class "blog"])
                 (div ([class "video"])
                      (video ([id "video"] [width "100%"] [height "100%"] [onclick "toggle_pause();"] [autoplay ""] [controls ""])
@@ -171,6 +174,7 @@
            "tr:nth-child(even) {
              background-color: #EEEEEE;
            }")
+         (title "All Gondolas - GondolaArchive")
        (body
          (a ([href "/archive/gondolas.zip"]) "Download All (zip file)")
          (p "Public API: " (a ([href "/random"]) "/random") " redirects to a random gondola. " (a ([href "/random-raw"]) "/random-raw") " redirects to a random gondola video stream.")
