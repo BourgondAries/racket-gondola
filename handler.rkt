@@ -246,6 +246,8 @@
                             (th ,(date->string (seconds->date views) #t))))
                      times)))
           (br)
+          (p "There are " ,(number->string (length webms)) " Gondolas in this archive.")
+          (br)
           (table ((style "display: inline-block;"))
             (tr (th "Gondola (by name)") (th "Views"))
             (tr (th "-------") (th "-----"))
