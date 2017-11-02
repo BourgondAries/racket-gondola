@@ -64,11 +64,25 @@
 (define (get-random-page-raw)
   (string-append "/video/" (get-random-webm)))
 
-(define (random-hello)
-  (vector-ref hello (random (vector-length hello))))
-
 (define (strip-extension-webm str)
   (string-trim str ".webm" #:left? false))
+
+(define (post-source post)
+  (let ([target (build-path "sources" post)])
+    (call-with-file-lock/timeout target 'exclusive
+      (lambda ()
+        (if (file-exists? target)
+          (with-input-from-file target
+            (lambda () (read-line)))
+          ""))
+      (lambda ()
+        (displayln "N/A")))))
+
+(define (post-source-display post)
+  (let ([src (post-source post)])
+    (if (string=? src "")
+      "Unknown (let me know in the comments)"
+      src)))
 
 (define (serve-post req post)
   (if (not (file-exists? (string-append "video/" post)))
@@ -128,7 +142,7 @@
                         }
                         ")
                 (div ([class "bottom"])
-                     (button ([type "button"] [onclick "ended();"]) ,(random-hello) (br) "Next (random)")
+                     (button ([type "button"] [onclick "ended();"]) (span ((style "font-size: 0.8em;")) "Source: " (br) ,(post-source-display post)) (br) "Next (random)")
                      (button ([type "button"] [onclick "showcomment();"])
                              ,(increment-webm-view-counter post) " views" (br)
                              "Show "
@@ -173,11 +187,20 @@
          (style
            "tr:nth-child(even) {
              background-color: #EEEEEE;
-           }")
+           }
+           @keyframes color_change {
+             0% { background-color: cyan; }
+             25% { background-color: orange; }
+             50% { background-color: yellow; }
+             75% { background-color: chartreuse; }
+             100% { background-color: red; }
+           }"
+           )
          (title "All Gondolas - GondolaArchive")
        (body
          (a ([href "/archive/gondolas.zip"]) "Download All (zip file)")
-         (p "Public API: " (a ([href "/random"]) "/random") " redirects to a random gondola. " (a ([href "/random-raw"]) "/random-raw") " redirects to a random gondola video stream.")
+         (p "Public API: " (a ([href "/random"]) "/random") " redirects to a random gondola. "
+            (a ([href "/random-raw"]) "/random-raw") " redirects to a random gondola video stream.")
          (p "N/A on the view count indicates high load, so the view count is not loaded. View count since 2017-09-17T18:42:49+0200")
          (p "Gondola suggestions: macocio@gmail.com")
          (br)
@@ -231,8 +254,12 @@
             [(* 60) " minute ago" " minutes ago"]
             ["Just now" " second ago" " seconds ago"]))
 
+(define (compute-source-completion webms)
+  (let ([source-count (foldl (lambda (x accum) (if (string=? x "") accum (add1 accum))) 0 (map third webms))])
+    (exact->inexact (* 100 (/ source-count (length webms))))))
+
 (define (create-list-table)
-  (let-values ([(views webms) (get-all-webm-with-views)])
+  (let-values ([(views webms) (get-all-webm-with-views-and-source)])
     (let ([times (sort (map (lambda-list-let (filename)
                               (list filename (file-or-directory-modify-seconds (build-path "video" filename))))
                             webms) > #:key second)])
@@ -246,13 +273,16 @@
                             (th ,(date->string (seconds->date views) #t))))
                      times)))
           (br)
-          (p "There are " ,(number->string (length webms)) " Gondolas in this archive.")
+          (p "There are " (span ((style "animation: color_change 3s infinite alternate; border: thin solid; font-size: 1.2em; font-weight: bold;"))
+                               ,(number->string (length webms)))
+             " Gondolas in this archive. "
+             (span ((style "animation: color_change 3s infinite alternate; border: thin solid; font-size: 1.2em; font-weight: bold;")) ,(real->decimal-string (compute-source-completion webms) 2) "%") " of Gondolas have a source.")
           (br)
-          (table ((style "display: inline-block;"))
-            (tr (th "Gondola (by name)") (th "Views"))
-            (tr (th "-------") (th "-----"))
+          (table ((style "border-right: thin solid black; display: inline-block; font-size: 0.8em;"))
+            (tr (th "Gondola (by name)") (th "Views") (th "Source"))
+            (tr (th "-------") (th "-----") (th "-----"))
             ,@(webm-table-alphabetical views webms))
-          (table ((style "display: inline-block;"))
+          (table ((style "display: inline-block; font-size: 0.8em;"))
             (tr (th "Gondola (by views)") (th "Views"))
             (tr (th "-------") (th "-----"))
             ,@(webm-table-by-views views webms)))))))
@@ -280,11 +310,26 @@
   (lambda-list-let (filename views)
     `(tr (th (a ([href ,filename]) ,filename)) (th ,views))))
 
+(define tabulate-webm-source
+  (lambda-list-let (filename views source)
+    `(tr (th (a ([href ,filename]) ,filename)) (th ,views) (th ,source))))
+
 (define (webm-table-by-views views webms)
   (webm-table views webms compare-number-strings-then-name))
 
 (define (webm-table-alphabetical views webms)
-  (webm-table views webms string<=? #:key first))
+  (let ([sorted (sort webms string<=? #:key first)])
+    (cons `(tr (th "Total") (th ,(number->string views)) (th ""))
+      (cons '(tr (th "-------") (th "-----") (th "-----"))
+        (map tabulate-webm-source sorted)))))
+
+(define (get-all-webm-with-views-and-source)
+  (let-values ([(sum-views webms) (get-all-webm-with-views)])
+    (values
+      sum-views
+      (map (lambda-list-let (webm views)
+             (list webm views (post-source webm)))
+           webms))))
 
 (define (get-all-webm-with-views)
   (for/fold-let ([sum-views 0]
