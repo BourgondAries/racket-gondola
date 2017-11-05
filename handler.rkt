@@ -98,7 +98,11 @@
           (link ([rel "icon"] [type "image/png"] [href "/images/musings_symbol_64.png"]))
           (link ([rel "stylesheet"] [type "text/css"] [href "/css/reset.css"]))
           (style
-            "button { background: rgba(32, 40, 45, 0.3); border: 1px solid #1C252B; color: lightgrey; font-size: 1em; height: 100%; left: 0%; position: relative; transform: translate(0%, 0); vertical-align: top; white-space: normal; width: 33.2%; }
+            "
+            .loading:after { animation: dotty steps(1, end) 2s infinite; content: ''; display: inline-block; font-family: monospace; }
+            @keyframes dotty { 0% { content: '|'; } 25% { content: '/'; } 50% { content: '-'; } 75% { content: '\\\\'; } 100% { content: '|'; }}
+
+            button { background: rgba(32, 40, 45, 0.3); border: 1px solid #1C252B; color: lightgrey; font-size: 1em; height: 100%; left: 0%; position: relative; transform: translate(0%, 0); vertical-align: top; white-space: normal; width: 33.2%; }
             button:hover { cursor: pointer; }
             .blog { background-image: url(\"/images/sharding.jpg\"); background-size: 100%; background-repeat: y; position: relative; }
             .video { height: 88vh; }
@@ -146,7 +150,7 @@
                      (button ([type "button"] [onclick "showcomment();"])
                              ,(increment-webm-view-counter post) " views" (br)
                              "Show "
-                             (a ([id "disqus_comments"] [href ,(string-append disqus-site post "#disqus_thread")]) "(loading) Comments"))
+                             (a ([id "disqus_comments"] [href ,(string-append disqus-site post "#disqus_thread")]) (span ((class "loading")) "") " Comments"))
                      (button ([type "button"] [onclick "location.href='/list';"])
                             ,(string-append (count-webms) " Gondolas") (br) "Show All"))
                 (div ([id "disqus_thread"] [hidden ""]))
