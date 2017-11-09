@@ -87,6 +87,13 @@
       "Unknown (let me know in the comments)"
       src)))
 
+(define (find-next-post post)
+  (let* ([all-webm (get-all-webm)]
+         [trail    (member post (get-all-webm))])
+    (if trail
+      (first (if (empty? (rest trail)) all-webm (rest trail)))
+      "random")))
+
 (define (serve-post req post)
   (dbug req)
   (if (not (file-exists? (string-append "video/" post)))
@@ -106,9 +113,11 @@
             .loading:after { animation: dotty steps(1, end) 2s infinite; content: ''; display: inline-block; font-family: monospace; }
             @keyframes dotty { 0% { content: '|'; } 25% { content: '/'; } 50% { content: '-'; } 75% { content: '\\\\'; } 100% { content: '|'; }}
 
-            button { background: rgba(32, 40, 45, 0.3); border: 1px solid #1C252B; color: lightgrey; font-size: 1em; height: 100%; left: 0%; position: relative; transform: translate(0%, 0); vertical-align: top; white-space: normal; width: 33.2%; }
-            button:hover { cursor: pointer; }
+            .center { position: relative; top: 50%; transform: translate(0, -50%); vertical-align: middle; }
+            .button { background: rgba(32, 40, 45, 0.3); border: 1px solid #1C252B;  box-sizing:border-box; color: lightgrey; display: inline-block; font-size: 1em; height: 100%; left: 0%; position: relative; text-align: center; text-decoration: none; transform: translate(0%, 0); vertical-align: middle; white-space: normal; width: 25.0%; }
+            .button:hover { cursor: pointer; }
             .blog { background-image: url(\"/images/sharding.jpg\"); background-size: 100%; background-repeat: y; position: relative; }
+            .small { font-size: 0.8em; }
             .video { height: 88vh; }
             .bottom { color: white; font-family: arial; height: 10vh; margin-bottom: 1vh; margin-top: 1vh; margin-left: 1vw; margin-right: 1vw; }
             #disqus_comments { color: inherit; cursor: default; pointer-events: none; text-decoration: none; }
@@ -150,13 +159,16 @@
                         }
                         ")
                 (div ([class "bottom"])
-                     (button ([type "button"] [onclick "ended();"]) (span ((style "font-size: 0.8em;")) "Source: " (br) ,(post-source-display post)) (br) "Next (random)")
-                     (button ([type "button"] [onclick "showcomment();"])
+                     (a ([class "button"] [href "/random"]) (div ([class "center"]) (span ([class "small"]) "Source: " (br) ,(post-source-display post)) (br) "Next (random)"))
+                     (a ([class "button"] [href ,(find-next-post post)]) (div ([class "center"]) (span ([class "small"]) ,(find-next-post post)) (br) "Next (ordered)"))
+                     (div ([class "button"] [onclick "showcomment();"])
+                          (div ([class "center"])
                              ,(increment-webm-view-counter post) " views" (br)
                              "Show "
-                             (a ([id "disqus_comments"] [href ,(string-append disqus-site post "#disqus_thread")]) (span ((class "loading")) "") " Comments"))
-                     (button ([type "button"] [onclick "location.href='/list';"])
-                            ,(string-append (count-webms) " Gondolas") (br) "Show All"))
+                             (a ([id "disqus_comments"] [href ,(string-append disqus-site post "#disqus_thread")]) (span ((class "loading")) "") " Comments")))
+                     (a ([class "button"] [href "/list"])
+                        (div ([class "center"])
+                            ,(string-append (count-webms) " Gondolas") (br) "Show All")))
                 (div ([id "disqus_thread"] [hidden ""]))
                 (script
                   "
