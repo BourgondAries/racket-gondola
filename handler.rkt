@@ -67,7 +67,7 @@
                                  (lambda ()
                                    "N/A"))))
 
-(define (count-webms)
+(define/timemo count-webms (300 (void) reloadable-safe-thread)
   (number->string (length (get-all-webm))))
 
 (define (get-random-page)
