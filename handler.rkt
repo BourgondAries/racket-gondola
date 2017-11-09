@@ -3,6 +3,7 @@
 (provide blog-dispatch file-not-found)
 
 (require (for-syntax racket/list racket/pretty racket/syntax syntax/parse)
+         "logger.rkt"
          reloadable
          racket/date
          racket/async-channel
@@ -87,6 +88,7 @@
       src)))
 
 (define (serve-post req post)
+  (dbug req)
   (if (not (file-exists? (string-append "video/" post)))
     (redirect-to (get-random-page))
     (response/xexpr
