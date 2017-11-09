@@ -4,6 +4,7 @@
 
 (require (for-syntax racket/list racket/pretty racket/syntax syntax/parse)
          "logger.rkt"
+         "timemo.rkt"
          reloadable
          racket/date
          racket/async-channel
@@ -181,12 +182,8 @@
                 (script ([id "dsq-count-scr"] [src "//evo-1.disqus.com/count.js"] [async ""]))
                 (noscript "Please enable JavaScript to view the " (a ([href "https://disqus.com/?ref_noscript"]) "comments powered by Disqus."))))))))
 
-(define list-all-channel (make-async-channel))
-
 (define (list-all req)
-  (let ([result (async-channel-get list-all-channel)])
-    (async-channel-put list-all-channel result)
-    result))
+  (threaded-renderer))
 
 (define (render-all)
   (response/xexpr
@@ -380,31 +377,8 @@
   (redirect-to default-video))
 
 (define (create-render-thread)
-    (current-directory "htdocs")
-    (let loop ([result (render-all)])
-      (async-channel-put list-all-channel result)
-      (trce `("safe Render at" ,(current-seconds)))
-      (sleep 60)
-      (let ([result* (render-all)])
-        (async-channel-get list-all-channel)
-        (loop result*))))
-
-(define-syntax (memotime stx)
-  (syntax-parse stx
-    [(_ name proc time)
-     (with-syntax ([channel        (format-id #'name "~a-channel" #'name)]
-                   [channel-thread (format-id #'name "~a-thread" #'name)])
-       '#(begin
-           (define (name) (let ([result (async-channel-get channel)])
-                            (async-channel-put channel result)
-                            result))
-           (define channel (make-async-channel))
-           (define channel-thread (thread (lambda () (let loop ([result (proc)])
-                                                       (async-channel-put channel result)
-                                                       (sleep time)
-                                                       (let ([new (proc)])
-                                                         (async-channel-get channel)
-                                                         (loop new))))))))]))
+  (dbug `("Doing render" ,(current-seconds)))
+  (render-all))
 
 (define-syntax (reloadable-safe-thread stx)
   (syntax-parse stx
@@ -415,4 +389,4 @@
            (kill-thread (name)))
          (name (thread proc)))]))
 
-(reloadable-safe-thread threaded-renderer create-render-thread)
+(timemo threaded-renderer 60 create-render-thread (current-directory "htdocs") reloadable-safe-thread)
