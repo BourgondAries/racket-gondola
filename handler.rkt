@@ -4,15 +4,13 @@
 
 (require (for-syntax racket/list racket/pretty racket/syntax syntax/parse)
          "logger.rkt"
+         "reloadable-helper.rkt"
+         "settings.rkt"
          "timemo.rkt"
-         reloadable
          racket/date
-         racket/async-channel
          web-server/dispatch
          web-server/servlet
          web-server/servlet-env)
-
-(require "settings.rkt")
 
 (define (serve-index req)
   (serve-post req default-video))
@@ -21,7 +19,8 @@
   (let ([len (length lst)])
     (list-ref lst (random len))))
 
-(define (get-all-webm)
+(define/timemo get-all-webm (120 (current-directory "htdocs") reloadable-safe-thread)
+  (trce "getting all webm")
   (map path->string (directory-list "video")))
 
 (define (increment-webm-view-counter webm)
@@ -182,10 +181,9 @@
                 (script ([id "dsq-count-scr"] [src "//evo-1.disqus.com/count.js"] [async ""]))
                 (noscript "Please enable JavaScript to view the " (a ([href "https://disqus.com/?ref_noscript"]) "comments powered by Disqus."))))))))
 
-(define (list-all req)
-  (threaded-renderer))
 
-(define (render-all)
+(define/timemo list-all (60 (current-directory "htdocs") reloadable-safe-thread)
+  (trce `("Rendering" ,(current-seconds)))
   (response/xexpr
     #:preamble #"<!DOCTYPE html>"
     `(html
@@ -375,18 +373,3 @@
 
 (define (file-not-found req)
   (redirect-to default-video))
-
-(define (create-render-thread)
-  (dbug `("Doing render" ,(current-seconds)))
-  (render-all))
-
-(define-syntax (reloadable-safe-thread stx)
-  (syntax-parse stx
-    [(_ name:id proc:expr)
-     #'(begin
-         (define name (make-persistent-state 'name (lambda () #f)))
-         (when (thread? (name))
-           (kill-thread (name)))
-         (name (thread proc)))]))
-
-(timemo threaded-renderer 60 create-render-thread (current-directory "htdocs") reloadable-safe-thread)
