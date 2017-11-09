@@ -12,6 +12,15 @@
          web-server/servlet
          web-server/servlet-env)
 
+(define common-header
+  '((meta ([charset "UTF-8"]))
+    (meta ([name "viewport"] [content "width=device-width,maximum-scale=1,minimum-scale=1"]))
+    (link ([rel "icon"] [type "image/png"] [href "/images/musings_symbol_16.png"]))
+    (link ([rel "icon"] [type "image/png"] [href "/images/musings_symbol_32.png"]))
+    (link ([rel "icon"] [type "image/png"] [href "/images/musings_symbol_64.png"]))
+    (link ([rel "stylesheet"] [type "text/css"] [href "/css/reset.css"]))
+    (link ([rel "stylesheet"] [type "text/css"] [href "/css/style.css"]))))
+
 (define (serve-index req)
   (serve-post req default-video))
 
@@ -102,62 +111,13 @@
       #:preamble #"<!DOCTYPE html>"
       `(html
         (head
-          (meta ([charset "UTF-8"]))
-          (meta ([name "viewport"] [content "width=device-width,maximum-scale=1,minimum-scale=1"]))
-          (link ([rel "icon"] [type "image/png"] [href "/images/musings_symbol_16.png"]))
-          (link ([rel "icon"] [type "image/png"] [href "/images/musings_symbol_32.png"]))
-          (link ([rel "icon"] [type "image/png"] [href "/images/musings_symbol_64.png"]))
-          (link ([rel "stylesheet"] [type "text/css"] [href "/css/reset.css"]))
-          (style
-            "
-            .loading:after { animation: dotty steps(1, end) 2s infinite; content: ''; display: inline-block; font-family: monospace; }
-            @keyframes dotty { 0% { content: '|'; } 25% { content: '/'; } 50% { content: '-'; } 75% { content: '\\\\'; } 100% { content: '|'; }}
-
-            .center { position: relative; top: 50%; transform: translate(0, -50%); vertical-align: middle; }
-            .button { background: rgba(32, 40, 45, 0.3); border: 1px solid #1C252B;  box-sizing:border-box; color: lightgrey; display: inline-block; font-size: 1em; height: 100%; left: 0%; position: relative; text-align: center; text-decoration: none; transform: translate(0%, 0); vertical-align: middle; white-space: normal; width: 25.0%; }
-            .button:hover { cursor: pointer; }
-            .blog { background-image: url(\"/images/sharding.jpg\"); background-size: 100%; background-repeat: y; position: relative; }
-            .small { font-size: 0.8em; }
-            .video { height: 88vh; }
-            .bottom { color: white; font-family: arial; height: 10vh; margin-bottom: 1vh; margin-top: 1vh; margin-left: 1vw; margin-right: 1vw; }
-            #disqus_comments { color: inherit; cursor: default; pointer-events: none; text-decoration: none; }
-            #disqus_thread { background: rgba(0, 0, 0, 0.8); padding: 0 1vw 0 1vw; }")
-          (title ,(string-append (strip-extension-webm post) " - GondolaArchive"))
+          ,@common-header
+          (title ,(strip-extension-webm post))
           (body ([class "blog"])
                 (div ([class "video"])
                      (video ([id "video"] [width "100%"] [height "100%"] [onclick "toggle_pause();"] [autoplay ""] [controls ""])
-                            (source ((src ,(string-append "/video/" post)) (type "video/webm")))))
-                (script ([type "text/javascript"])
-                        "document.getElementById('video').addEventListener('ended', ended, false);
-                        function ended(handle) {
-                            history.pushState({
-                              prevUrl: window.location.href
-                            }, 'Next page', \"/random\");
-                            history.go();
-                        }
-                        function toggle_pause() {
-                            if (document.getElementById('video').paused) {
-                               document.getElementById('video').play();
-                            } else {
-                               document.getElementById('video').pause();
-                            }
-                        }")
-                (script ([type "text/javascript"])
-                        "
-                        var showing = false;
-                        function showcomment(handle) {
-                            if (showing) {
-                              document.getElementById('disqus_thread').style.display = 'none';
-                            } else {
-                              if (!loaded_disqus) {
-                                load_disqus();
-                                loaded_disqus = true;
-                              }
-                              document.getElementById('disqus_thread').style.display = 'block';
-                            }
-                            showing = !showing;
-                        }
-                        ")
+                            (source ([src ,(string-append "/video/" post)] [type "video/webm"]))))
+                (script ([type "text/javascript"] [src "js/video.js"]))
                 (div ([class "bottom"])
                      (a ([class "button"] [href "/random"]) (div ([class "center"]) (span ([class "small"]) "Source: " (br) ,(post-source-display post)) (br) "Next (random)"))
                      (a ([class "button"] [href ,(find-next-post post)]) (div ([class "center"]) (span ([class "small"]) ,(find-next-post post)) (br) "Next (ordered)"))
@@ -170,26 +130,7 @@
                         (div ([class "center"])
                             ,(string-append (count-webms) " Gondolas") (br) "Show All")))
                 (div ([id "disqus_thread"] [hidden ""]))
-                (script
-                  "
-                  var loaded_disqus = false;
-                  function load_disqus() {
-                    /**
-                    *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
-                    *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables*/
-                    /*
-                    var disqus_config = function () {
-                      this.page.url = \"" ,disqus-site "\";  // Replace PAGE_URL with your page's canonical URL variable
-                      this.page.identifier = \"" ,post "\"; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
-                    };
-                    */
-                    (function() { // DON'T EDIT BELOW THIS LINE
-                      var d = document, s = d.createElement('script');
-                      s.src = '//evo-1.disqus.com/embed.js';
-                      s.setAttribute('data-timestamp', +new Date());
-                      (d.head || d.body).appendChild(s);
-                    })();
-                  }")
+                (script ([type "text/javascript"] [src "js/disqus.js"]))
                 (script ([id "dsq-count-scr"] [src "//evo-1.disqus.com/count.js"] [async ""]))
                 (noscript "Please enable JavaScript to view the " (a ([href "https://disqus.com/?ref_noscript"]) "comments powered by Disqus."))))))))
 
@@ -200,25 +141,8 @@
     #:preamble #"<!DOCTYPE html>"
     `(html
        (head
-         (meta ([charset "UTF-8"]))
-         (meta ([name "viewport"] [content "width=device-width,maximum-scale=1,minimum-scale=1"]))
-         (link ([rel "icon"] [type "image/png"] [href "/images/musings_symbol_16.png"]))
-         (link ([rel "icon"] [type "image/png"] [href "/images/musings_symbol_32.png"]))
-         (link ([rel "icon"] [type "image/png"] [href "/images/musings_symbol_64.png"]))
-         (link ([rel "stylesheet"] [type "text/css"] [href "/css/reset.css"])))
-         (style
-           "tr:nth-child(even) {
-             background-color: #EEEEEE;
-           }
-           @keyframes color_change {
-             0% { background-color: cyan; }
-             25% { background-color: orange; }
-             50% { background-color: yellow; }
-             75% { background-color: chartreuse; }
-             100% { background-color: red; }
-           }"
-           )
-         (title "All Gondolas - GondolaArchive")
+         ,@common-header
+         (title "All Gondolas - GondolaArchive"))
        (body
          (a ([href "/archive/gondolas.zip"]) "Download All (zip file)")
          (p "Public API: " (a ([href "/random"]) "/random") " redirects to a random gondola. "
@@ -226,8 +150,7 @@
          (p "N/A on the view count indicates high load, so the view count is not loaded. View count since 2017-09-17T18:42:49+0200")
          (p "Gondola suggestions: macocio@gmail.com")
          (br)
-         ,@(create-list-table)
-  ))))
+         ,@(create-list-table)))))
 
 (define-syntax (for/fold-let stx)
   (syntax-parse stx
