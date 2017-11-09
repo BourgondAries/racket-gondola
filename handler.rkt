@@ -273,10 +273,14 @@
   (let ([source-count (foldl (lambda (x accum) (if (string=? x "") accum (add1 accum))) 0 (map third webms))])
     (exact->inexact (* 100 (/ source-count (length webms))))))
 
+(define (safe-file-or-directory-modify-seconds path)
+  (with-handlers ([identity (lambda e 0)])
+    (file-or-directory-modify-seconds path)))
+
 (define (create-list-table)
   (let-values ([(views webms) (get-all-webm-with-views-and-source)])
     (let ([times (sort (map (lambda-list-let (filename)
-                              (list filename (file-or-directory-modify-seconds (build-path "video" filename))))
+                              (list filename (safe-file-or-directory-modify-seconds (build-path "video" filename))))
                             webms) > #:key second)])
       (let ([current-time (current-seconds)])
         `((p "Recently added Gondolas")
