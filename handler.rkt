@@ -29,7 +29,7 @@
     (list-ref lst (random len))))
 
 (define/timemo get-all-webm (120 (current-directory "htdocs") reloadable-safe-thread)
-  (trce "getting all webm")
+  (trce `("get-all-webm" ,(current-seconds)))
   (map path->string (directory-list "video")))
 
 (define (increment-webm-view-counter webm)
@@ -68,6 +68,7 @@
                                    "N/A"))))
 
 (define/timemo count-webms (300 (void) reloadable-safe-thread)
+  (trce `("count-webms" ,(current-seconds)))
   (number->string (length (get-all-webm))))
 
 (define (get-random-page)
@@ -136,7 +137,7 @@
 
 
 (define/timemo list-all (60 (current-directory "htdocs") reloadable-safe-thread)
-  (trce `("Rendering" ,(current-seconds)))
+  (trce `("list-all" ,(current-seconds)))
   (response/xexpr
     #:preamble #"<!DOCTYPE html>"
     `(html

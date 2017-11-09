@@ -11,4 +11,4 @@
          (define name (make-persistent-state 'name (lambda () #f)))
          (when (thread? (name))
            (kill-thread (name)))
-         (name (thread proc)))]))
+         (void (name (thread proc))))]))
