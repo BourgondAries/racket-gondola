@@ -1,1 +1,1 @@
-tar cvf htdocs/archive/$(date -u +"%Y-%m-%dT%H:%M:%SZ").tar htdocs/statistics/
+tar cvf htdocs/archive/$(date -u +"%m-%d").tar htdocs/statistics/
