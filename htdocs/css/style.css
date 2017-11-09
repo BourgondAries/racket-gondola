@@ -3,7 +3,7 @@ tr:nth-child(even) { background-color: #EEEEEE; }
 @keyframes color_change { 0% { background-color: cyan; } 25% { background-color: orange; } 50% { background-color: yellow; } 75% { background-color: chartreuse; } 100% { background-color: red; } }
 .loading:after { animation: dotty steps(1, end) 2s infinite; content: ''; display: inline-block; font-family: monospace; }
 @keyframes dotty { 0% { content: '|'; } 25% { content: '/'; } 50% { content: '-'; } 75% { content: '\\'; } 100% { content: '|'; }}
-.blog { background-image: url("/images/sharding.jpg"); background-size: 100%; background-repeat: y; position: relative; }
+.blog { background-image: url("/images/sharding.jpg"); background-attachment: fixed; background-position: center top; background-repeat: y; background-size: 100% auto; position: relative; }
 .bottom { color: white; font-family: arial; height: 10vh; margin-bottom: 1vh; margin-top: 1vh; margin-left: 1vw; margin-right: 1vw; }
 .button { background: rgba(32, 40, 45, 0.3); border: thin solid #1C252B;  box-sizing:border-box; color: lightgrey; display: inline-block; font-size: 1em; height: 100%; text-align: center; text-decoration: none; vertical-align: middle; white-space: normal; width: 25%; }
 .button:hover { cursor: pointer; }
