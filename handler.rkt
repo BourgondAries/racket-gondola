@@ -232,7 +232,7 @@
 
 (define-syntax (time-ago stx)
   (syntax-parse stx
-    [(_ value (limit singular plural) ... (zero singular* plural*))
+    [(_ value:expr (limit:expr singular:expr plural:expr) ... (zero:expr singular*:expr plural*:expr))
      #'(cond
           ([> (truncate (/ value limit)) 0] (let ([actual (exact-truncate (truncate (/ value limit)))])
                                               (string-append (number->string actual)
