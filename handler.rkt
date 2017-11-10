@@ -137,6 +137,7 @@
         (head
           ,@common-header
           (script ([type "text/javascript"])
+                  "var next_url = \"" ,(blog-url serve-next) "\";"
                   "var next = \"" ,(find-next-post post) "\";"
                   "var play_random = " ,(if (get-autoplay-cookie req) "true" "false") ";")
           (title ,(strip-extension-webm post))
@@ -146,7 +147,7 @@
                             (source ([src ,(string-append "/video/" post)] [type "video/webm"]))))
                 (script ([type "text/javascript"] [src "js/video.js?x=2"]))
                 (div ([class "bottom"])
-                     (a ([class "button"] [href "/random"]) (div ([class "center"]) (span ([class "small"]) "Source: " (br) ,(post-source-display post)) (br) "Next (random)" ,@(if (get-autoplay-cookie req) '((br) (span ([class "autoplay"]) "autoplaying random")) null)))
+                     (a ([class "button"] [href ,(blog-url redirect-random)]) (div ([class "center"]) (span ([class "small"]) "Source: " (br) ,(post-source-display post)) (br) "Next (random)" ,@(if (get-autoplay-cookie req) '((br) (span ([class "autoplay"]) "autoplaying random")) null)))
                      (a ([class "button"] [href ,(string-append "/next?v=" (find-next-post post))]) (div ([class "center"]) (span ([class "small"]) ,(find-next-post post)) (br) "Next (ordered)" ,@(if (get-autoplay-cookie req) null '((br) (span ([class "autoplay"]) "autoplaying next")))))
                      (div ([class "button"] [onclick "showcomment();"])
                           (div ([class "center"])
@@ -171,8 +172,8 @@
          (title "All Gondolas - GondolaArchive"))
        (body
          (a ([href "/archive/gondolas.zip"]) "Download All (zip file)")
-         (p "Public API: " (a ([href "/random"]) "/random") " redirects to a random gondola. "
-            (a ([href "/random-raw"]) "/random-raw") " redirects to a random gondola video stream.")
+         (p "Public API: " (a ([href ,(blog-url redirect-random)]) ,(blog-url redirect-random)) " redirects to a random gondola. "
+            (a ([href ,(blog-url redirect-random-raw)]) ,(blog-url redirect-random-raw)) " redirects to a random gondola video stream.")
          (p "N/A on the view count indicates high load, so the view count is not loaded. View count since 2017-09-17T18:42:49+0200")
          (p "Video can be looped in most browsers: right-click -> loop")
          (p "Videos normally autoplay. If you click Next (ordered) autoplay will play sequentually, if you click Next (random) autoplay will play in random order")
@@ -325,10 +326,16 @@
       (cons '(tr (th "-------") (th "-----"))
         (map tabulate-webm sorted)))))
 
+(define (redirect-random req)
+  (redirect-to (get-random-page) #:headers (list (cookie->header play-random)) temporarily))
+
+(define (redirect-random-raw req)
+  (redirect-to (get-random-page-raw) temporarily))
+
 (define-values (blog-dispatch blog-url)
   (dispatch-rules
-    (("random") (lambda _ (redirect-to (get-random-page) #:headers (list (cookie->header play-random)))))
-    (("random-raw") (lambda _ (redirect-to (get-random-page-raw))))
+    (("random") redirect-random)
+    (("random-raw") redirect-random-raw)
     (("next") serve-next)
     (("list") list-all)
     (("favicon.ico") (lambda _ (redirect-to "/images/musings_symbol_128.png" permanently)))

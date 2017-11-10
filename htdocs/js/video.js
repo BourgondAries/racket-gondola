@@ -7,7 +7,7 @@ function ended(handle) {
     } else {
       history.pushState({
         prevUrl: window.location.href
-      }, 'Next page', '/next?v=' + next);
+      }, 'Next page', next_url + '?v=' + next);
     }
     history.go();
 }
