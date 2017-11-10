@@ -28,8 +28,7 @@
   (let ([len (length lst)])
     (list-ref lst (random len))))
 
-(define/timemo get-all-webm (120 (current-directory "htdocs") reloadable-safe-thread)
-  (trce `("get-all-webm" ,(current-seconds)))
+(define/timemo get-all-webm (120 (current-directory "htdocs") reloadable-safe-thread trce*)
   (map path->string (directory-list "video")))
 
 (define (increment-webm-view-counter webm)
@@ -40,16 +39,20 @@
           (with-input-from-file target
             (lambda ()
               (let ([increment (add1 (string->number (read-line)))])
+                (info^ `("incremented view counter" ,webm ,increment))
                 (with-output-to-file target
                   (lambda ()
                     (write increment)
                     (number->string increment)) #:exists 'truncate))))
           (with-output-to-file target
-            (lambda () (write 1)
+            (lambda ()
+              (warn^ `("created new view counter" ,webm))
+              (write 1)
               "1")
             #:exists 'truncate)))
       (lambda ()
-        (displayln "N/A")))))
+        (warn^ `("Unable to lock view count" ,webm))
+        "N/A"))))
 
 (define (get-random-webm)
   (select-random (get-all-webm)))
@@ -65,10 +68,10 @@
                                          value))
                                      "0"))
                                  (lambda ()
+                                   (warn^ `("Unable to lock view count" ,webm))
                                    "N/A"))))
 
-(define/timemo count-webms (300 (void) reloadable-safe-thread)
-  (trce `("count-webms" ,(current-seconds)))
+(define/timemo count-webms (300 (void) reloadable-safe-thread trce*)
   (number->string (length (get-all-webm))))
 
 (define (get-random-page)
@@ -89,7 +92,8 @@
             (lambda () (read-line)))
           ""))
       (lambda ()
-        (displayln "N/A")))))
+        (warn^ `("Unable to get source" ,post))
+        "N/A"))))
 
 (define (post-source-display post)
   (let ([src (post-source post)])
@@ -111,13 +115,16 @@
 (define play-random (make-cookie cookie-autoplay cookie-autoplay-random))
 
 (define (serve-next req)
-  (let ([result (findf
+  (let* ([result (findf
                   (lambda (x)
                     (if (pair? x)
                       (symbol=? (car x) 'v)
                       #f))
-                  (request-bindings req))])
-  (redirect-to (if result (cdr result) "/") #:headers (list (cookie->header play-next)) temporarily)))
+                  (request-bindings req))]
+         [next (if result (cdr result) "/")])
+    (info+ next)
+    (redirect-to next #:headers (list (cookie->header play-next)) temporarily)))
+
 
 (define (get-autoplay-cookie req)
   (let ([result (findf
@@ -128,9 +135,11 @@
       #t)))
 
 (define (serve-post req post)
-  (trce (get-autoplay-cookie req))
+  (trce+ req)
   (if (not (file-exists? (string-append "video/" post)))
-    (redirect-to (get-random-page))
+    (begin
+      (erro^ "unable to find video, serving random")
+      (redirect-to (get-random-page)))
     (response/xexpr
       #:preamble #"<!DOCTYPE html>"
       `(html
@@ -163,8 +172,7 @@
                 (script ([id "dsq-count-scr"] [src "//evo-1.disqus.com/count.js"] [async ""]))
                 (noscript "Please enable JavaScript to view the " (a ([href "https://disqus.com/?ref_noscript"]) "comments powered by Disqus."))))))))
 
-(define/timemo list-all (60 (current-directory "htdocs") reloadable-safe-thread)
-  (trce `("list-all" ,(current-seconds)))
+(define/timemo list-all (120 (current-directory "htdocs") reloadable-safe-thread trce*)
   (response/xexpr
     #:preamble #"<!DOCTYPE html>"
     `(html
@@ -177,7 +185,7 @@
             (a ([href ,(blog-url redirect-random-raw)]) ,(blog-url redirect-random-raw)) " redirects to a random gondola video stream.")
          (p "N/A on the view count indicates high load, so the view count is not loaded. View count since 2017-09-17T18:42:49+0200")
          (p "Video can be looped in most browsers: right-click -> loop")
-         (p "Videos normally autoplay. If you click Next (ordered) autoplay will play sequentually, if you click Next (random) autoplay will play in random order")
+         (p "Videos normally autoplay. If you click Next (ordered) autoplay will play sequentually, if you click Next (random) autoplay will play in random order. Log: " (a ([href "/logs/log"]) "/logs/log") ", colored log (ansi color codes): " (a ([href "/logs/color-log"]) "/logs/color-log"))
          (p "Gondola suggestions: macocio@gmail.com")
          (br)
          ,@(create-list-table)))))

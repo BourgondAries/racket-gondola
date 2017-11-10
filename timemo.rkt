@@ -40,7 +40,7 @@
                                               (async-channel-get chn)
                                               (loop new)))))])
                       get))]
-    [(_ name:id time:expr proc:expr once:expr threader:id)
+    [(_ name:id time:expr proc:expr once:expr threader:id (~optional (~seq #:every every:expr) #:defaults ([every #'void])))
      (with-syntax ([channel        (format-id #'name "timemo-internal:~a-channel" #'name)]
                    [channel-thread (format-id #'name "timemo-internal:~a-thread" #'name)])
        #'(begin
@@ -50,9 +50,11 @@
                           result)))
          (define channel (make-async-channel))
          (threader channel-thread (lambda () once
+                                             (every `(timemo name ,(current-seconds)))
                                              (let loop ([result (proc)])
                                              (async-channel-put channel result)
                                              (sleep time)
+                                             (every `(timemo name ,(current-seconds)))
                                              (let ([new (proc)])
                                                (async-channel-get channel)
                                                (loop new)))))))]))
@@ -66,4 +68,6 @@
     [(_ name:id (time:expr once:expr) thunk:expr ...+)
      #'(timemo name time (lambda () thunk ...) once)]
     [(_ name:id (time:expr once:expr threader:id) thunk:expr ...+)
-     #'(timemo name time (lambda () thunk ...) once threader)]))
+     #'(timemo name time (lambda () thunk ...) once threader)]
+    [(_ name:id (time:expr once:expr threader:id every:expr) thunk:expr ...+)
+     #'(timemo name time (lambda () thunk ...) once threader #:every every)]))

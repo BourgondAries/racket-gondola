@@ -43,7 +43,9 @@
           [else ""])
         "")
       str
-      (if use-color? "\e[0m" ""))))
+      (if use-color? "\e[0m" ""))
+    (current-error-port))
+  (flush-output (current-error-port)))
 
 (define (get-time)
   (let ([old-format (date-display-format)])
