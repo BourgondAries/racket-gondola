@@ -137,6 +137,7 @@
         (head
           ,@common-header
           (script ([type "text/javascript"])
+                  "var random_url = \"" ,(blog-url redirect-random) "\";"
                   "var next_url = \"" ,(blog-url serve-next) "\";"
                   "var next = \"" ,(find-next-post post) "\";"
                   "var play_random = " ,(if (get-autoplay-cookie req) "true" "false") ";")

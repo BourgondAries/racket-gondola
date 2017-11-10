@@ -3,7 +3,7 @@ function ended(handle) {
     if (play_random) {
       history.pushState({
         prevUrl: window.location.href
-      }, 'Next page', '/random');
+      }, 'Next page', random_url);
     } else {
       history.pushState({
         prevUrl: window.location.href
