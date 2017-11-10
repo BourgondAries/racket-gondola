@@ -104,8 +104,31 @@
       (first (if (empty? (rest trail)) all-webm (rest trail)))
       "random")))
 
+(define cookie-autoplay "autoplay")
+(define cookie-autoplay-random "random")
+
+(define play-next (make-cookie cookie-autoplay "next"))
+(define play-random (make-cookie cookie-autoplay cookie-autoplay-random))
+
+(define (serve-next req)
+  (let ([result (findf
+                  (lambda (x)
+                    (if (pair? x)
+                      (symbol=? (car x) 'v)
+                      #f))
+                  (request-bindings req))])
+  (redirect-to (if result (cdr result) "/") #:headers (list (cookie->header play-next)) temporarily)))
+
+(define (get-autoplay-cookie req)
+  (let ([result (findf
+                  (lambda (x) (string=? (client-cookie-name x) cookie-autoplay))
+                  (request-cookies req))])
+    (if result
+      (string=? (client-cookie-value result) cookie-autoplay-random)
+      #t)))
+
 (define (serve-post req post)
-  (dbug req)
+  (trce (get-autoplay-cookie req))
   (if (not (file-exists? (string-append "video/" post)))
     (redirect-to (get-random-page))
     (response/xexpr
@@ -113,15 +136,18 @@
       `(html
         (head
           ,@common-header
+          (script ([type "text/javascript"])
+                  "var next = \"" ,(find-next-post post) "\";"
+                  "var play_random = " ,(if (get-autoplay-cookie req) "true" "false") ";")
           (title ,(strip-extension-webm post))
           (body ([class "blog"])
                 (div ([class "video"])
                      (video ([id "video"] [width "100%"] [height "100%"] [onclick "toggle_pause();"] [autoplay ""] [controls ""])
                             (source ([src ,(string-append "/video/" post)] [type "video/webm"]))))
-                (script ([type "text/javascript"] [src "js/video.js"]))
+                (script ([type "text/javascript"] [src "js/video.js?x=2"]))
                 (div ([class "bottom"])
-                     (a ([class "button"] [href "/random"]) (div ([class "center"]) (span ([class "small"]) "Source: " (br) ,(post-source-display post)) (br) "Next (random)"))
-                     (a ([class "button"] [href ,(find-next-post post)]) (div ([class "center"]) (span ([class "small"]) ,(find-next-post post)) (br) "Next (ordered)"))
+                     (a ([class "button"] [href "/random"]) (div ([class "center"]) (span ([class "small"]) "Source: " (br) ,(post-source-display post)) (br) "Next (random)" ,@(if (get-autoplay-cookie req) '((br) (span ([class "autoplay"]) "autoplaying random")) null)))
+                     (a ([class "button"] [href ,(string-append "/next?v=" (find-next-post post))]) (div ([class "center"]) (span ([class "small"]) ,(find-next-post post)) (br) "Next (ordered)" ,@(if (get-autoplay-cookie req) null '((br) (span ([class "autoplay"]) "autoplaying next")))))
                      (div ([class "button"] [onclick "showcomment();"])
                           (div ([class "center"])
                              ,(increment-webm-view-counter post) " views" (br)
@@ -129,12 +155,11 @@
                              (a ([id "disqus_comments"] [href ,(string-append disqus-site post "#disqus_thread")]) (span ((class "loading")) "") " Comments")))
                      (a ([class "button"] [href "/list"])
                         (div ([class "center"])
-                            ,(string-append (count-webms) " Gondolas") (br) "Show All")))
+                            ,(string-append (count-webms) " Gondolas") (br) "Show All/Info")))
                 (div ([id "disqus_thread"] [hidden ""]))
                 (script ([type "text/javascript"] [src "js/disqus.js"]))
                 (script ([id "dsq-count-scr"] [src "//evo-1.disqus.com/count.js"] [async ""]))
                 (noscript "Please enable JavaScript to view the " (a ([href "https://disqus.com/?ref_noscript"]) "comments powered by Disqus."))))))))
-
 
 (define/timemo list-all (60 (current-directory "htdocs") reloadable-safe-thread)
   (trce `("list-all" ,(current-seconds)))
@@ -149,6 +174,8 @@
          (p "Public API: " (a ([href "/random"]) "/random") " redirects to a random gondola. "
             (a ([href "/random-raw"]) "/random-raw") " redirects to a random gondola video stream.")
          (p "N/A on the view count indicates high load, so the view count is not loaded. View count since 2017-09-17T18:42:49+0200")
+         (p "Video can be looped in most browsers: right-click -> loop")
+         (p "Videos normally autoplay. If you click Next (ordered) autoplay will play sequentually, if you click Next (random) autoplay will play in random order")
          (p "Gondola suggestions: macocio@gmail.com")
          (br)
          ,@(create-list-table)))))
@@ -300,8 +327,9 @@
 
 (define-values (blog-dispatch blog-url)
   (dispatch-rules
-    (("random") (lambda _ (redirect-to (get-random-page))))
+    (("random") (lambda _ (redirect-to (get-random-page) #:headers (list (cookie->header play-random)))))
     (("random-raw") (lambda _ (redirect-to (get-random-page-raw))))
+    (("next") serve-next)
     (("list") list-all)
     (("favicon.ico") (lambda _ (redirect-to "/images/musings_symbol_128.png" permanently)))
     (((string-arg)) serve-post)

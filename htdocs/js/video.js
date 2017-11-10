@@ -1,10 +1,17 @@
 document.getElementById('video').addEventListener('ended', ended, false);
 function ended(handle) {
-    history.pushState({
-      prevUrl: window.location.href
-    }, 'Next page', '/random');
+    if (play_random) {
+      history.pushState({
+        prevUrl: window.location.href
+      }, 'Next page', '/random');
+    } else {
+      history.pushState({
+        prevUrl: window.location.href
+      }, 'Next page', '/next?v=' + next);
+    }
     history.go();
 }
+
 function toggle_pause() {
     if (document.getElementById('video').paused) {
        document.getElementById('video').play();
