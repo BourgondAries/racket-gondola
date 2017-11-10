@@ -1,17 +1,49 @@
 #lang racket
 
 ;;;; Provides loggers to standard error ports. The loggers automatically write the expressions and their results.
-;;;; This means executing `(trce (+ 1 2 3))` writes `(trce time (source line column) (+ 1 2 3) = 6)`.
-;;;; Appending a star to the logger name prevents writing the expression: `(trce* (+ 1 2 3))` writes
-;;;; `(trce time (source line column) _ = 6)`.
-;;;; The output can be read using `read`. It is printed using `pretty-write`. The time format is set to
-;;;; iso-8601 using date-display-format, so it may interfere with your date tools.
+;;;; This means executing `(trce (+ 1 2 3))` writes `(trce (+ 1 2 3) = 6)`.
+;;;; # Loggers #
+;;;; There are 7 loggers: trce (trace), dbug (debug), info (info), warn (warning), erro (error), crit (critical), ftal (fatal).
+;;;; # Appendages #
+;;;; Appending a star (*) to the logger name prevents writing the expression: `(trce* (+ 1 2 3))` writes `(trce* _ = 6)`.
+;;;; Appending a caret (^) to the logger name prevents writing the expression: and includes a timestamp and source location:  `(trce^ (+ 1 2 3))` writes `(trce^ 2017-11-10T07:59:09 ("/home/me/archive.rkt" 170 9)) _ = 6)`.
+;;;; Appending a plus (+) to the logger name and includes a timestamp and source location:  `(trce+ (+ 1 2 3))` writes `(trce^ 2017-11-10T07:59:09 ("/home/me/archive.rkt" 170 9)) (+ 1 2 3) = 6)`.
 
-(provide trce  dbug  info  warn  erro  crit  ftal
+;;;; # Color #
+;;;; Change the color by using (logger-color arg), arg : (or/c 'automatic #f #t). Automatic checks if a tty is attached.
+
+;;;; The output can be read using `read`. It is printed using `pretty-write`. The datetime format is in
+;;;; iso-8601.
+
+(provide logger-color
+         trce  dbug  info  warn  erro  crit  ftal
          trce* dbug* info* warn* erro* crit* ftal*
+         trce^ dbug^ info^ warn^ erro^ crit^ ftal^
          trce+ dbug+ info+ warn+ erro+ crit+ ftal+)
 
 (require racket/date racket/syntax (for-syntax racket/syntax syntax/parse))
+
+(define use-color? 'automatic)
+(define logger-color (case-lambda
+                       [() use-color?]
+                       [(x) (set! use-color? x)]))
+
+(define (color-print sym str)
+  (display
+    (string-append
+      (if use-color?
+        (match sym
+          ['trce "\e[0;35m"]
+          ['dbug "\e[0;36m"]
+          ['info "\e[0;32m"]
+          ['warn "\e[0;33m"]
+          ['erro "\e[0;31m"]
+          ['crit "\e[1;31m"]
+          ['ftal "\e[43m\e[1;91m"]
+          [else ""])
+        "")
+      str
+      (if use-color? "\e[0m" ""))))
 
 (define (get-time)
   (let ([old-format (date-display-format)])
@@ -28,33 +60,55 @@
 
 (define-syntax (base stx)
   (syntax-parse stx
-    [(_ name:id)
+    [(_ basename:id name:id)
       #'(begin
-        (pretty-write `(name ,(get-time) (,(get-source #'name) ,(syntax-line #'name) ,(syntax-column #'name))) (current-error-port)))]
-    [(_ name:id expr:expr ...+)
+        (let ([out (open-output-string)])
+          (pretty-write `(name ,(get-time) (,(get-source #'name) ,(syntax-line #'name) ,(syntax-column #'name))) out)
+          (color-print 'basename (get-output-string out))))]
+    [(_ basename:id name:id expr:expr ...+)
       #'(begin
-          (let ([result expr])
-            (pretty-write `(name expr = ,result) (current-error-port))) ...)]))
+        (let ([result expr]
+              [out (open-output-string)])
+          (pretty-write `(name expr = ,result) out)
+          (color-print 'basename (get-output-string out))
+          result) ...)]))
 
-(define-syntax (base-no-print stx)
+(define-syntax (base* stx)
   (syntax-parse stx
-    [(_ name:id expr:expr)
+    [(_ basename:id name:id expr:expr)
       #'(begin
-        (let ([result expr])
-          (pretty-write `(name ,(get-time) (,(get-source #'expr) ,(syntax-line #'expr) ,(syntax-column #'expr)) _ = ,result) (current-error-port)) result) )]))
+        (let ([result expr]
+              [out (open-output-string)])
+          (pretty-write `(name _ = ,result) out)
+          (color-print 'basename (get-output-string out))
+          result))]))
 
-(define-syntax (base-verbose stx)
+(define-syntax (base^ stx)
   (syntax-parse stx
-    [(_ name:id expr:expr)
+    [(_ basename:id name:id expr:expr)
       #'(begin
-        (let ([result expr])
-          (pretty-write `(name ,(get-time) (,(get-source #'expr) ,(syntax-line #'expr) ,(syntax-column #'expr)) expr = ,result) (current-error-port)) result) )]))
+        (let ([result expr]
+              [out (open-output-string)])
+          (pretty-write `(name ,(get-time) (,(get-source #'expr) ,(syntax-line #'expr) ,(syntax-column #'expr)) _ = ,result) out)
+          (color-print 'basename (get-output-string out))
+          result))]))
+
+(define-syntax (base+ stx)
+  (syntax-parse stx
+    [(_ basename:id name:id expr:expr)
+      #'(begin
+        (let ([result expr]
+              [out (open-output-string)])
+          (pretty-write `(name ,(get-time) (,(get-source #'expr) ,(syntax-line #'expr) ,(syntax-column #'expr)) expr = ,result) out)
+          (color-print 'basename (get-output-string out))
+          result))]))
 
 (define-syntax (make-loggers stx)
   (syntax-parse stx
     [(_ name:id ...+)
       (let ([loggers (syntax-e #'(name ...))])
-        (with-syntax* ([(rename ...) (for/list ([name-e (syntax-e #'(name ...))]) (format-id stx "~a*" name-e))]
+        (with-syntax* ([(no-expr ...) (for/list ([name-e (syntax-e #'(name ...))]) (format-id stx "~a*" name-e))]
+                       [(date/src-no-expr ...) (for/list ([name-e (syntax-e #'(name ...))]) (format-id stx "~a^" name-e))]
                        [(verbose ...) (for/list ([name-e (syntax-e #'(name ...))]) (format-id stx "~a+" name-e))])
           (syntax-protect
             #'(begin
@@ -62,16 +116,24 @@
                 (define-syntax (name (... stx))
                   (syntax-parse (... stx)
                     (... [(call:id whatever:expr ...)
-                      #'(base call whatever ...)])))
-                (define-syntax (rename (... stx))
+                      #'(base call name whatever ...)])))
+
+                (define-syntax (no-expr (... stx))
                   (syntax-parse (... stx)
                     (... [(call:id whatever:expr ...)
                       (with-syntax ([caller-id (datum->syntax #'call 'name #'call)])
-                        #'(base-no-print caller-id whatever ...))])))
+                        #'(base* caller-id no-expr whatever ...))])))
+
+                (define-syntax (date/src-no-expr (... stx))
+                  (syntax-parse (... stx)
+                    (... [(call:id whatever:expr ...)
+                      (with-syntax ([caller-id (datum->syntax #'call 'name #'call)])
+                        #'(base^ caller-id date/src-no-expr whatever ...))])))
+
                 (define-syntax (verbose (... stx))
                   (syntax-parse (... stx)
                     (... [(call:id whatever:expr ...)
                       (with-syntax ([caller-id (datum->syntax #'call 'name #'call)])
-                        #'(base-verbose caller-id whatever ...))])))) ...))))]))
+                        #'(base+ caller-id verbose whatever ...))])))) ...))))]))
 
 (make-loggers trce dbug info warn erro crit ftal)
