@@ -1,4 +1,7 @@
 @charset "utf-8";
+.rainbow-block { animation: color_change 3s infinite alternate; border: thin solid; font-size: 1.2em; font-weight: bold; }
+.source-table { border-right: thin solid black; display: inline-block; font-size: 0.8em; vertical-align: top; max-width: 70%; }
+.view-table { display: inline-block; font-size: 0.8em; vertical-align: top; max-width: 70%; }
 tr:nth-child(even) { background-color: #EEEEEE; }
 @keyframes color_change { 0% { background-color: cyan; } 25% { background-color: orange; } 50% { background-color: yellow; } 75% { background-color: chartreuse; } 100% { background-color: red; } }
 .loading:after { animation: dotty steps(1, end) 2s infinite; content: ''; display: inline-block; font-family: monospace; }
@@ -10,6 +13,7 @@ tr:nth-child(even) { background-color: #EEEEEE; }
 .button:hover { cursor: pointer; }
 .center { position: relative; top: 50%; transform: translate(0, -50%); vertical-align: middle; }
 .small { font-size: 0.8em; }
+.small-scroll { border: 1px solid black; height: 10vh; min-height: 1em; overflow-y: scroll; }
 .video { height: 88vh; }
 #disqus_comments { color: inherit; cursor: default; pointer-events: none; text-decoration: none; }
 #disqus_thread { background: rgba(0, 0, 0, 0.8); padding: 0 1vw 0 1vw; }
