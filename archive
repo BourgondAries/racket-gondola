@@ -5,6 +5,7 @@ read r
 if [ "$r" == "yes" ]; then
 	cd htdocs/
 	rm statistics/*
+	rm logs/*
 	7z a -up1q1r2x1y1z1w1 archive/gondolas.zip video sources
 fi
 
