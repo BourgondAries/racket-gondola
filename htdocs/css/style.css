@@ -12,6 +12,9 @@ tr:nth-child(even) { background-color: #EEEEEE; }
 .button { background: rgba(32, 40, 45, 0.3); border: thin solid #1C252B;  box-sizing:border-box; color: lightgrey; display: inline-block; font-size: 1em; height: 100%; overflow: auto; padding: 0.3em; text-align: center; text-decoration: none; vertical-align: middle; white-space: normal; word-break: break-all; width: 25%; }
 .button:hover { cursor: pointer; }
 .center { position: relative; top: 50%; transform: translate(0, -50%); vertical-align: middle; }
+.giant { font-size: 2em; }
+.fourofour { font-family: Courier; position: relative; top: 50%; text-align: center; transform: translate(0%, -50%); vertical-align: middle; }
+.screen { height: 100vh; width: 100vw; }
 .small { font-size: 0.8em; }
 .small-scroll { border: 1px solid black; height: 10vh; min-height: 1em; overflow-y: scroll; }
 .video { height: 88vh; }

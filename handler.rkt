@@ -19,7 +19,7 @@
     (link ([rel "icon"] [type "image/png"] [href "/images/musings_symbol_32.png"]))
     (link ([rel "icon"] [type "image/png"] [href "/images/musings_symbol_64.png"]))
     (link ([rel "stylesheet"] [type "text/css"] [href "/css/reset.css"]))
-    (link ([rel "stylesheet"] [type "text/css"] [href "/css/style.css?x=34"]))))
+    (link ([rel "stylesheet"] [type "text/css"] [href "/css/style.css?x=36"]))))
 
 (define (serve-index req)
   (serve-post req default-video))
@@ -301,13 +301,16 @@
     `(tr (th (a ([href ,filename]) ,filename)) (th ,views) (th ,source))))
 
 (define (webm-table-by-views views webms)
-  (webm-table views webms compare-number-strings-then-name))
+  (let ([sorted (sort webms compare-number-strings-then-name)])
+    `((tr (th "Total")   (th ,(number->string views)))
+      (tr (th "-------") (th "-----"))
+      ,@(map tabulate-webm sorted))))
 
 (define (webm-table-alphabetical views webms)
   (let ([sorted (sort webms string<=? #:key first)])
-    (cons `(tr (th "Total") (th ,(number->string views)) (th ""))
-      (cons '(tr (th "-------") (th "-----") (th "-----"))
-        (map tabulate-webm-source sorted)))))
+    `((tr (th "Total")   (th ,(number->string views)) (th ""))
+      (tr (th "-------") (th "-----")                 (th "-----"))
+      ,@(map tabulate-webm-source sorted))))
 
 (define (get-all-webm-with-views-and-source)
   (let-values ([(sum-views webms) (get-all-webm-with-views)])
@@ -328,12 +331,6 @@
         (cons (list x views) table)))
     (values sum-views table)))
 
-(define (webm-table views webms sorter #:key [key identity])
-  (let ([sorted (sort webms sorter #:key key)])
-    (cons `(tr (th "Total") (th ,(number->string views)))
-      (cons '(tr (th "-------") (th "-----"))
-        (map tabulate-webm sorted)))))
-
 (define (redirect-random req)
   (redirect-to (get-random-page) #:headers (list (cookie->header play-random)) temporarily))
 
@@ -342,6 +339,7 @@
 
 (define-values (blog-dispatch blog-url)
   (dispatch-rules
+    (("") (lambda _ (redirect-to default-video)))
     (("random") redirect-random)
     (("random-raw") redirect-random-raw)
     (("robots.txt") (lambda _ (redirect-to "/misc/robots.txt" permanently)))
@@ -352,4 +350,14 @@
     (else (lambda _ (redirect-to default-video)))))
 
 (define (file-not-found req)
-  (redirect-to default-video))
+  (erro^ `("issuing 404" ,req))
+  (response/xexpr #:code 404 #:message #"Not Found"
+     #:preamble #"<!DOCTYPE html>"
+     `(html
+        (head ,@common-header)
+        (body ([class "screen"])
+              (div ([class "fourofour"])
+                   (p ([class "giant"])
+                      "404")
+                   (br)
+                   "not found")))))

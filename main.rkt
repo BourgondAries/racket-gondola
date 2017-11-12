@@ -19,7 +19,7 @@
   #:listen-ip #f
   #:port 8000
   #:server-root-path (current-directory)
-  #:servlet-regexp #px"^/[^/]+$"
+  #:servlet-regexp #px"^/[^/]*$"
   #:command-line? #t
   #:file-not-found-responder file-not-found
   #:ssl? #f

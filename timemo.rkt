@@ -17,34 +17,32 @@
                    (~optional (~seq #:threader threader) #:too-many "threader is already defined")) ...)
                  thunk:expr ...+)
      (if (attribute threader)
-       (with-syntax ([channel        (format-id #'name "timemo-internal:~a-channel" #'name)]
-                     [channel-thread (format-id #'name "timemo-internal:~a-thread" #'name)])
-         #'(define name (let ([channel (make-async-channel)])
-                          (threader channel-thread
-                            (lambda ()
-                              once
-                              (every `(timemo name ,(current-seconds)))
-                              (let loop ([result (begin thunk ...)])
-                                (async-channel-put channel result)
-                                (sleep time)
-                                (every `(timemo name ,(current-seconds)))
-                                (let ([new (begin thunk ...)])
-                                  (async-channel-get channel)
-                                  (loop new)))))
+       #'(define name (let ([channel (make-async-channel)])
+                        (threader name
                           (lambda ()
-                            (let ([result (async-channel-get channel)])
+                            once
+                            (every `(timemo name ,(current-seconds)))
+                            (let loop ([result (begin thunk ...)])
                               (async-channel-put channel result)
-                              result)))))
-         #'(define name (let* ([chn (make-async-channel)]
-                               [get (lambda _ (let ([result (async-channel-get chn)])
-                                                (async-channel-put chn result)
-                                                result))]
-                               [thr (thread (lambda ()
-                                              once
-                                              (let loop ([result (begin thunk ...)])
-                                                (async-channel-put chn result)
-                                                (sleep time)
-                                                (let ([new (begin thunk ...)])
-                                                  (async-channel-get chn)
-                                                  (loop new)))))])
-                          get)))]))
+                              (sleep time)
+                              (every `(timemo name ,(current-seconds)))
+                              (let ([new (begin thunk ...)])
+                                (async-channel-get channel)
+                                (loop new)))))
+                        (lambda _
+                          (let ([result (async-channel-get channel)])
+                            (async-channel-put channel result)
+                            result))))
+       #'(define name (let* ([chn (make-async-channel)]
+                             [get (lambda _ (let ([result (async-channel-get chn)])
+                                              (async-channel-put chn result)
+                                              result))]
+                             [thr (thread (lambda ()
+                                            once
+                                            (let loop ([result (begin thunk ...)])
+                                              (async-channel-put chn result)
+                                              (sleep time)
+                                              (let ([new (begin thunk ...)])
+                                                (async-channel-get chn)
+                                                (loop new)))))])
+                        get)))]))
