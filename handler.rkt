@@ -28,7 +28,7 @@
   (let ([len (length lst)])
     (list-ref lst (random len))))
 
-(define/timemo get-all-webm (120 (current-directory "htdocs") reloadable-safe-thread trce*)
+(define/timemo get-all-webm (#:time 1200 #:once (current-directory "htdocs") #:threader reloadable-safe-thread #:every trce*)
   (map path->string (directory-list "video")))
 
 (define (increment-webm-view-counter webm)
@@ -71,7 +71,7 @@
                                    (warn^ `("Unable to lock view count" ,webm))
                                    "N/A"))))
 
-(define/timemo count-webms (300 (void) reloadable-safe-thread trce*)
+(define/timemo count-webms (#:time 3600 #:once (current-directory "htdocs") #:threader reloadable-safe-thread #:every trce*)
   (number->string (length (get-all-webm))))
 
 (define (get-random-page)
@@ -172,7 +172,7 @@
                 (script ([id "dsq-count-scr"] [src "//evo-1.disqus.com/count.js"] [async ""]))
                 (noscript "Please enable JavaScript to view the " (a ([href "https://disqus.com/?ref_noscript"]) "comments powered by Disqus."))))))))
 
-(define/timemo list-all (120 (current-directory "htdocs") reloadable-safe-thread trce*)
+(define/timemo list-all (#:time 1200 #:once (current-directory "htdocs") #:threader reloadable-safe-thread #:every trce*)
   (response/xexpr
     #:preamble #"<!DOCTYPE html>"
     `(html

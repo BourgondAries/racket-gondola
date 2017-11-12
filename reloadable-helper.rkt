@@ -8,7 +8,7 @@
   (syntax-parse stx
     [(_ name:id proc:expr)
      #'(begin
-         (define name (make-persistent-state 'name (lambda () #f)))
-         (when (thread? (name))
-           (kill-thread (name)))
-         (void (name (thread proc))))]))
+         (let ([name (make-persistent-state 'name (lambda () #f))])
+           (when (thread? (name))
+             (kill-thread (name)))
+           (void (name (thread proc)))))]))
