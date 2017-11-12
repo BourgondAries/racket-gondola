@@ -19,7 +19,7 @@
     (link ([rel "icon"] [type "image/png"] [href "/images/musings_symbol_32.png"]))
     (link ([rel "icon"] [type "image/png"] [href "/images/musings_symbol_64.png"]))
     (link ([rel "stylesheet"] [type "text/css"] [href "/css/reset.css"]))
-    (link ([rel "stylesheet"] [type "text/css"] [href "/css/style.css?x=8"]))))
+    (link ([rel "stylesheet"] [type "text/css"] [href "/css/style.css?x=34"]))))
 
 (define (serve-index req)
   (serve-post req default-video))
