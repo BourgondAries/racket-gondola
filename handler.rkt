@@ -19,7 +19,11 @@
     (link ([rel "icon"] [type "image/png"] [href "/images/musings_symbol_32.png"]))
     (link ([rel "icon"] [type "image/png"] [href "/images/musings_symbol_64.png"]))
     (link ([rel "stylesheet"] [type "text/css"] [href "/css/reset.css"]))
-    (link ([rel "stylesheet"] [type "text/css"] [href "/css/style.css?x=36"]))))
+    (link ([rel "stylesheet"] [type "text/css"] [href "/css/style.css?x=36"]))
+    (meta ([name "description"] [content "Gondola webms depicting our favorite silent observer"]))
+    (meta ([property "og:title"] [content "Gondola"]))
+    (meta ([property "og:description"] [content "Gondola webms depicting our favorite silent observer"]))
+    (meta ([property "og:image"] [content "/images/musings_symbol_128.png"]))))
 
 (define (serve-index req)
   (serve-post req default-video))
@@ -352,12 +356,12 @@
 (define (file-not-found req)
   (erro^ `("issuing 404" ,req))
   (response/xexpr #:code 404 #:message #"Not Found"
-     #:preamble #"<!DOCTYPE html>"
-     `(html
-        (head ,@common-header)
-        (body ([class "screen"])
-              (div ([class "fourofour"])
-                   (p ([class "giant"])
-                      "404")
-                   (br)
-                   "not found")))))
+    #:preamble #"<!DOCTYPE html>"
+    `(html
+       (head ,@common-header)
+       (body ([class "screen"])
+             (div ([class "fourofour"])
+                  (p ([class "giant"])
+                     "404")
+                  (br)
+                  "not found")))))
