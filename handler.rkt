@@ -142,7 +142,7 @@
   (trce+ req)
   (if (not (file-exists? (string-append "video/" post)))
     (begin
-      (erro^ "unable to find video, serving random")
+      (erro^ `("unable to find video, serving random" ,post))
       (redirect-to (get-random-page)))
     (response/xexpr
       #:preamble #"<!DOCTYPE html>"
@@ -278,17 +278,15 @@
             ,@(webm-table-by-views views webms)))))))
 
 (define (numeric-compare x y)
-  (cond
-    ([< x y] 'less)
-    ([= x y] 'equal)
-    ([> x y] 'greater)))
+  (if (and x y)
+    (cond
+      ([< x y] 'less)
+      ([= x y] 'equal)
+      ([> x y] 'greater))
+    'less))
 
 (define (compare-number-strings x y)
-  (numeric-compare
-    (with-handlers ([identity (lambda e 0)])
-      (string->number x))
-    (with-handlers ([identity (lambda e 0)])
-      (string->number y))))
+  (numeric-compare (string->number x) (string->number y)))
 
 (define (compare-number-strings-then-name x y)
   (match (compare-number-strings (second x) (second y))
