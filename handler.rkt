@@ -13,16 +13,16 @@
          web-server/servlet-env)
 
 (define common-header
-  '((meta ([charset "UTF-8"]))
+  `((meta ([charset "UTF-8"]))
     (meta ([name "viewport"] [content "width=device-width,maximum-scale=1,minimum-scale=1"]))
     (link ([rel "icon"] [type "image/png"] [href "/images/musings_symbol_16.png"]))
     (link ([rel "icon"] [type "image/png"] [href "/images/musings_symbol_32.png"]))
     (link ([rel "icon"] [type "image/png"] [href "/images/musings_symbol_64.png"]))
     (link ([rel "stylesheet"] [type "text/css"] [href "/css/reset.css"]))
     (link ([rel "stylesheet"] [type "text/css"] [href "/css/style.css?x=36"]))
-    (meta ([name "description"] [content "Gondola webms depicting our favorite silent observer"]))
-    (meta ([property "og:title"] [content "Gondola"]))
-    (meta ([property "og:description"] [content "Gondola webms depicting our favorite silent observer"]))
+    (meta ([name "description"] [content ,description]))
+    (meta ([property "og:title"] [content ,singular]))
+    (meta ([property "og:description"] [content ,description]))
     (meta ([property "og:image"] [content "/images/musings_symbol_128.png"]))))
 
 (define (serve-index req)
@@ -35,6 +35,11 @@
 (define/timemo get-all-webm (#:time 1200 #:once (current-directory "htdocs") #:threader reloadable-safe-thread #:every trce*)
   (map path->string (directory-list "video")))
 
+(define (iffalse value proc)
+  (if value
+    value
+    (proc)))
+
 (define (increment-webm-view-counter webm)
   (let ([target (build-path "statistics" webm)])
     (call-with-file-lock/timeout target 'exclusive
@@ -42,7 +47,8 @@
         (if (file-exists? target)
           (with-input-from-file target
             (lambda ()
-              (let ([increment (add1 (string->number (read-line)))])
+              (let ([increment (add1 (iffalse (string->number (read-line))
+                                              (lambda () 0)))])
                 (info^ `("incremented view counter" ,webm ,increment))
                 (with-output-to-file target
                   (lambda ()
@@ -140,7 +146,7 @@
 
 (define (serve-post req post)
   (trce+ req)
-  (if (not (file-exists? (string-append "video/" post)))
+  (if (not (file-exists? (build-path "video" post)))
     (begin
       (erro^ `("unable to find video, serving random" ,post))
       (redirect-to (get-random-page)))
@@ -150,6 +156,7 @@
         (head
           ,@common-header
           (script ([type "text/javascript"])
+                  "var forum_url = \"" ,forum-name "\";"
                   "var random_url = \"" ,(blog-url redirect-random) "\";"
                   "var next_url = \"" ,(blog-url serve-next) "\";"
                   "var next = \"" ,(find-next-post post) "\";"
@@ -170,10 +177,10 @@
                              (a ([id "disqus_comments"] [href ,(string-append disqus-site post "#disqus_thread")]) (span ((class "loading")) "") " Comments")))
                      (a ([class "button"] [href "/list"])
                         (div ([class "center"])
-                            ,(string-append (count-webms) " Gondolas") (br) "Show All/Info")))
+                            ,(count-webms) " " ,plurality (br) "Show All/Info")))
                 (div ([id "disqus_thread"] [hidden ""]))
                 (script ([type "text/javascript"] [src "js/disqus.js"]))
-                (script ([id "dsq-count-scr"] [src "//evo-1.disqus.com/count.js"] [async ""]))
+                (script ([id "dsq-count-scr"] [src ,(string-append "//" forum-name ".disqus.com/count.js")] [async ""]))
                 (noscript "Please enable JavaScript to view the " (a ([href "https://disqus.com/?ref_noscript"]) "comments powered by Disqus."))))))))
 
 (define/timemo list-all (#:time 1200 #:once (current-directory "htdocs") #:threader reloadable-safe-thread #:every trce*)
@@ -182,15 +189,15 @@
     `(html
        (head
          ,@common-header
-         (title "All Gondolas - GondolaArchive"))
+         (title "All " ,plurality " - " ,list-title))
        (body
          (a ([href "/archive/gondolas.zip"]) "Download All (zip file)")
-         (p "Public API: " (a ([href ,(blog-url redirect-random)]) ,(blog-url redirect-random)) " redirects to a random gondola. "
-            (a ([href ,(blog-url redirect-random-raw)]) ,(blog-url redirect-random-raw)) " redirects to a random gondola video stream.")
+         (p "Public API: " (a ([href ,(blog-url redirect-random)]) ,(blog-url redirect-random)) " redirects to a random " ,singular-normal ". "
+            (a ([href ,(blog-url redirect-random-raw)]) ,(blog-url redirect-random-raw)) " redirects to a random " ,singular-normal "video stream.")
          (p "N/A on the view count indicates high load, so the view count is not loaded. View count since 2017-09-17T18:42:49+0200")
          (p "Video can be looped in most browsers: right-click -> loop")
          (p "Videos normally autoplay. If you click Next (ordered) autoplay will play sequentually, if you click Next (random) autoplay will play in random order. Log: " (a ([href "/logs/log"]) "/logs/log") ", colored log (ansi color codes): " (a ([href "/logs/color-log"]) "/logs/color-log"))
-         (p "Gondola suggestions: macocio@gmail.com")
+         (p ,singular " suggestions: macocio@gmail.com")
          (br)
          ,@(create-list-table)))))
 
@@ -255,7 +262,7 @@
                               (list filename (safe-file-or-directory-modify-seconds (build-path "video" filename))))
                             webms) > #:key second)])
       (let ([current-time (current-seconds)])
-        `((p "Recently added Gondolas")
+        `((p "Recently added " ,plurality)
           (div ([class "small-scroll"])
             (table
               ,@(map (lambda-list-let (filename views)
@@ -265,15 +272,15 @@
                      times)))
           (br)
           (p "There are " (span ([class "rainbow-block"]) ,(number->string (length webms)))
-             " Gondolas in this archive. "
-             (span ([class "rainbow-block"]) ,(real->decimal-string (compute-source-completion webms) 2) "%") " of Gondolas have a source. Last render: " ,(date->string (seconds->date (current-seconds)) #t))
+             " " ,plurality " in this archive. "
+             (span ([class "rainbow-block"]) ,(real->decimal-string (compute-source-completion webms) 2) "%") " of " ,plurality " have a source. Last render: " ,(date->string (seconds->date (current-seconds)) #t))
           (br)
           (table ([class "source-table"])
-            (tr (th "Gondola (by name)") (th "Views") (th "Source"))
+            (tr (th ,singular " (by name)") (th "Views") (th "Source"))
             (tr (th "-------") (th "-----") (th "-----"))
             ,@(webm-table-alphabetical views webms))
           (table ([class "view-table"])
-            (tr (th "Gondola (by views)") (th "Views"))
+            (tr (th ,singular " (by views)") (th "Views"))
             (tr (th "-------") (th "-----"))
             ,@(webm-table-by-views views webms)))))))
 
