@@ -1,6 +1,6 @@
 #lang racket
 
-(provide reloadable-safe-thread)
+(provide (contract-out (reloadable-safe-thread (-> symbol? procedure? void?))))
 
 (require reloadable)
 
