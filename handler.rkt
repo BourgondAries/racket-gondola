@@ -193,7 +193,7 @@
        (body
          (a ([href "/archive/gondolas.zip"]) "Download All (zip file)")
          (p "Public API: " (a ([href ,(blog-url redirect-random)]) ,(blog-url redirect-random)) " redirects to a random " ,singular-normal ". "
-            (a ([href ,(blog-url redirect-random-raw)]) ,(blog-url redirect-random-raw)) " redirects to a random " ,singular-normal "video stream.")
+            (a ([href ,(blog-url redirect-random-raw)]) ,(blog-url redirect-random-raw)) " redirects to a random " ,singular-normal " video stream.")
          (p "N/A on the view count indicates high load, so the view count is not loaded. View count since 2017-09-17T18:42:49+0200")
          (p "Video can be looped in most browsers: right-click -> loop")
          (p "Videos normally autoplay. If you click Next (ordered) autoplay will play sequentually, if you click Next (random) autoplay will play in random order. Log: " (a ([href "/logs/log"]) "/logs/log") ", colored log (ansi color codes): " (a ([href "/logs/color-log"]) "/logs/color-log"))
