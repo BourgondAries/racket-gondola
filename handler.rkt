@@ -174,7 +174,7 @@
                           (div ([class "center"])
                              ,(increment-webm-view-counter post) " views" (br)
                              "Show "
-                             (a ([id "disqus_comments"] [href ,(string-append disqus-site post "#disqus_thread")]) (span ((class "loading")) "") " Comments")))
+                             (a ([id "disqus_comments"] [href ,(string-append disqus-site "/" post "#disqus_thread")]) (span ((class "loading")) "") " Comments")))
                      (a ([class "button"] [href "/list"])
                         (div ([class "center"])
                             ,(count-webms) " " ,plurality (br) "Show All/Info")))
