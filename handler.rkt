@@ -12,18 +12,21 @@
          web-server/servlet
          web-server/servlet-env)
 
+(module+ test (require rackunit))
+
 (define common-header
   `((meta ([charset "UTF-8"]))
-    (meta ([name "viewport"] [content "width=device-width,maximum-scale=1,minimum-scale=1"]))
-    (link ([rel "icon"] [type "image/png"] [href "/images/musings_symbol_16.png"]))
-    (link ([rel "icon"] [type "image/png"] [href "/images/musings_symbol_32.png"]))
-    (link ([rel "icon"] [type "image/png"] [href "/images/musings_symbol_64.png"]))
+    (meta ([name "viewport"] [content "width=device-width,maximum-scale=1,minimum-scale=1,minimal-ui"]))
+    (link ([rel "icon"] [type "image/png"] [href "/images/musings_symbol_16_christmas.png"]))
+    (link ([rel "icon"] [type "image/png"] [href "/images/musings_symbol_32_christmas.png"]))
+    (link ([rel "icon"] [type "image/png"] [href "/images/musings_symbol_64_christmas.png"]))
+    (link ([rel "icon"] [type "image/png"] [href "/images/musings_symbol_128_christmas.png"]))
     (link ([rel "stylesheet"] [type "text/css"] [href "/css/reset.css"]))
-    (link ([rel "stylesheet"] [type "text/css"] [href "/css/style.css?x=36"]))
+    (link ([rel "stylesheet"] [type "text/css"] [href "/css/style.css?x=38"]))
     (meta ([name "description"] [content ,description]))
     (meta ([property "og:title"] [content ,singular]))
     (meta ([property "og:description"] [content ,description]))
-    (meta ([property "og:image"] [content "/images/musings_symbol_128.png"]))))
+    (meta ([property "og:image"] [content "/images/musings_symbol_128_christmas.png"]))))
 
 (define (serve-index req)
   (serve-post req default-video))
