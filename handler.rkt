@@ -9,7 +9,7 @@
          "timemo.rkt"
          (only-in racket/bool symbol=?)
          (only-in racket/date date->string)
-         (only-in racket/file 
+         (only-in racket/file
                   call-with-file-lock/timeout
                   make-temporary-file)
          (only-in racket/function identity)
