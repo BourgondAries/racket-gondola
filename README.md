@@ -10,7 +10,7 @@ To run this server:
 ## Configuration ##
 
 ### Server Port ###
-The `-p 8002:8000` clause in the file `dock` specifies which port the server is hosted on. Change 8002 to any other port to take effect.
+The `-p 8002:8000` clause in the file `dock` specifies which port the server is hosted on. Change 8002 to any other port to take effect (you will need to restart the image).
 
 ### Disqus and Site words ###
 `settings.rkt` contains various string settings, such as the disqus forum, the name of the site, the name of an entry, and so on.
@@ -39,3 +39,6 @@ Note that you ought to use a reverse proxy via nginx or apache if you can, and l
 
 Check the log messages. If there's nothing interesting there, try increasing `-m=190` in `dock`. This limits the amount of memory usage. It's currently capped at 190 MB, but it might be too little for your architecture.
 
+# Not yet finished things #
+
+I still need to add a christmas date checker to `handler.rkt` to change favicons.
