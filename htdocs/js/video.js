@@ -1,3 +1,5 @@
+window.addEventListener("load", function() { window. scrollTo(0, 0); });
+
 document.getElementById('video').addEventListener('ended', ended, false);
 function ended(handle) {
     if (play_random) {

@@ -1,6 +1,6 @@
 #! /usr/bin/env bash
 
-echo Are you absolutely sure '(yes/no)'
+echo "Are you absolutely sure? [the operation deletes all statistics] (yes/no)"
 read r
 if [ "$r" == "yes" ]; then
 	cd htdocs/

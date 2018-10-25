@@ -2,15 +2,19 @@
 
 (provide (all-defined-out))
 
-(define default-video "/FrontPage.webm")
+(require (for-syntax syntax/parse))
 
-(define disqus-site "http://gondola.stravers.net/")
-; (define disqus-site "http://localhost:8000/")
+(define-syntax (defines stx)
+  (syntax-parse stx
+    [(_ (name:expr value:expr) ...)
+     #'(begin (define name value) ...)]))
 
-(define plurality "Gondolas")
-(define plurality-normal "Gondolas")
-(define list-title "GondolaArchive")
-(define singular "Gondola")
-(define singular-normal "Gondola")
-(define description "Gondola webms depicting our favorite silent observer")
-(define forum-name "evo-1")
+(defines (default-video "/FrontPage.webm")
+         (disqus-site "http://gondola.stravers.net")
+         (plurality "Gondolas")
+         (plurality-normal "Gondolas")
+         (list-title "GondolaArchive")
+         (singular "Gondola")
+         (singular-normal "Gondola")
+         (description "Gondola webms depicting our favorite silent observer")
+         (forum-name "evo-1"))

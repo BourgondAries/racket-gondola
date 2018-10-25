@@ -7,5 +7,5 @@ if [ "$answer" = y ]; then
 fi
 
 touch htdocs/logs/color-log
-docker run --rm -e HOST_UID=$UID -e HOST_PASS='nani sore desu ka' -v $HOME/stuf:/home/user/stuf -v $(pwd):/home/user/racket -p 8002:8000 gondola-archive 2> htdocs/logs/color-log &
+docker run -m=190m --rm -e HOST_UID=$UID -e HOST_PASS='nani sore desu ka' -v $HOME/stuf:/home/user/stuf -v $(pwd):/home/user/racket -p 8002:8000 gondola-archive 2> htdocs/logs/color-log &
 tail -f htdocs/logs/color-log | sed 's/\x1b\[[0-9;]*m//g' > htdocs/logs/log

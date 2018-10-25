@@ -1,13 +1,24 @@
-#lang racket
+#lang racket/base
 
 (provide blog-dispatch file-not-found)
 
-(require (for-syntax racket/list racket/pretty racket/syntax syntax/parse)
+(require (for-syntax racket/base racket/list racket/pretty racket/syntax syntax/parse)
          "logger.rkt"
          "reloadable-helper.rkt"
          "settings.rkt"
          "timemo.rkt"
-         racket/date
+         (only-in racket/bool symbol=?)
+         (only-in racket/date date->string)
+         (only-in racket/file 
+                  call-with-file-lock/timeout
+                  make-temporary-file)
+         (only-in racket/function identity)
+         (only-in racket/list
+                  empty? empty first rest third second)
+         (only-in racket/match match)
+         (only-in racket/math exact-truncate)
+         (only-in racket/string string-trim)
+         (only-in racket/path file-name-from-path)
          web-server/dispatch
          web-server/servlet
          web-server/servlet-env)
@@ -17,12 +28,12 @@
 (define common-header
   `((meta ([charset "UTF-8"]))
     (meta ([name "viewport"] [content "width=device-width,maximum-scale=1,minimum-scale=1,minimal-ui"]))
-    (link ([rel "icon"] [type "image/png"] [href "/images/musings_symbol_16_christmas.png"]))
-    (link ([rel "icon"] [type "image/png"] [href "/images/musings_symbol_32_christmas.png"]))
-    (link ([rel "icon"] [type "image/png"] [href "/images/musings_symbol_64_christmas.png"]))
-    (link ([rel "icon"] [type "image/png"] [href "/images/musings_symbol_128_christmas.png"]))
+    (link ([rel "icon"] [type "image/png"] [href "/images/musings_symbol_16.png"]))
+    (link ([rel "icon"] [type "image/png"] [href "/images/musings_symbol_32.png"]))
+    (link ([rel "icon"] [type "image/png"] [href "/images/musings_symbol_64.png"]))
+    (link ([rel "icon"] [type "image/png"] [href "/images/musings_symbol_128.png"]))
     (link ([rel "stylesheet"] [type "text/css"] [href "/css/reset.css"]))
-    (link ([rel "stylesheet"] [type "text/css"] [href "/css/style.css?x=38"]))
+    (link ([rel "stylesheet"] [type "text/css"] [href "/css/style.css?x=50"]))
     (meta ([name "description"] [content ,description]))
     (meta ([property "og:title"] [content ,singular]))
     (meta ([property "og:description"] [content ,description]))
@@ -35,6 +46,10 @@
   (let ([len (length lst)])
     (list-ref lst (random len))))
 
+(define/timemo clear (#:time 5 #:threader reloadable-safe-thread)
+  ; (trce 'collecting-garbage)
+  (collect-garbage 'major))
+
 (define/timemo get-all-webm (#:time 1200 #:once (current-directory "htdocs") #:threader reloadable-safe-thread #:every trce*)
   (map path->string (directory-list "video")))
 
@@ -42,6 +57,10 @@
   (if value
     value
     (proc)))
+
+(module+ test
+  (check-equal? (iffalse #f (lambda () 0)) 0)
+  (check-equal? (iffalse 'true (lambda ()  0)) 'true))
 
 (define (increment-webm-view-counter webm)
   (let ([target (build-path "statistics" webm)])
@@ -94,7 +113,23 @@
   (string-append "/video/" (get-random-webm)))
 
 (define (strip-extension-webm str)
-  (string-trim str ".webm" #:left? false))
+  (string-trim str ".webm" #:left? #f))
+
+(define-syntax (prefix stx)
+  (syntax-parse stx
+    [(_ transformer:expr ((element:expr ...) ...))
+     #'(begin (transformer element ...) ...)]))
+
+(module+ test
+  (test-case "Make sure the webm extension trimmer works"
+    (define-simple-check (check-strip lhs rhs)
+      (string=? (strip-extension-webm lhs) rhs))
+    (prefix check-strip
+            ((".webm" "")
+             ("webm" "webm")
+             (".webm." ".webm.")
+             ("webm.mkv" "webm.mkv")
+             ("mkv.webm" "mkv")))))
 
 (define (post-source post)
   (let ([target (build-path "sources" post)])
@@ -102,11 +137,36 @@
       (lambda ()
         (if (file-exists? target)
           (with-input-from-file target
-            (lambda () (read-line)))
+            (lambda ()
+              (let ([line (read-line)])
+                (if (eof-object? line)
+                  ""
+                  line))))
           ""))
       (lambda ()
         (warn^ `("Unable to get source" ,post))
         "N/A"))))
+
+(module+ test
+  (current-directory "htdocs")
+  (test-case "Nonexistent file"
+             (check-equal? (post-source "nonexistent file") ""))
+  (test-case "Empty file"
+             (let ([file (make-temporary-file "rkttmp~a" #f "sources")])
+               (check-equal? (post-source (file-name-from-path file)) "")
+               (delete-file file)))
+  (test-case "Nonempty file"
+             (let ([file (make-temporary-file "rkttmp~a" #f "sources")])
+               (with-output-to-file file #:exists 'append
+                 (lambda () (display "source data")))
+               (check-equal? (post-source (file-name-from-path file)) "source data")
+               (delete-file file)))
+  (test-case "Locked file"
+             (let ([file (make-temporary-file "rkttmp~a" #f "sources")])
+               (call-with-file-lock/timeout file 'exclusive
+                                            (lambda () (check-equal? (post-source (file-name-from-path file)) "N/A"))
+                                            (lambda () (fail "Unable to lock file during test")))
+               (delete-file file))))
 
 (define (post-source-display post)
   (let ([src (post-source post)])
@@ -138,7 +198,6 @@
     (info+ next)
     (redirect-to next #:headers (list (cookie->header play-next)) temporarily)))
 
-
 (define (get-autoplay-cookie req)
   (let ([result (findf
                   (lambda (x) (string=? (client-cookie-name x) cookie-autoplay))
@@ -164,12 +223,14 @@
                   "var next_url = \"" ,(blog-url serve-next) "\";"
                   "var next = \"" ,(find-next-post post) "\";"
                   "var play_random = " ,(if (get-autoplay-cookie req) "true" "false") ";")
-          (title ,(strip-extension-webm post))
+          (title ,(strip-extension-webm post)))
           (body ([class "blog"])
+                (div ([class "announcement"])
+                     "Now mobile friendly! To autoplay, add this site to your browser's autoplay exceptions!")
                 (div ([class "video"])
-                     (video ([id "video"] [width "100%"] [height "100%"] [onclick "toggle_pause();"] [autoplay ""] [controls ""])
+                     (video ([id "video"] [width "100%"] [height "100%"] [onclick "toggle_pause();"] [autoplay "true"] [controls ""])
                             (source ([src ,(string-append "/video/" post)] [type "video/webm"]))))
-                (script ([type "text/javascript"] [src "js/video.js?x=3"]))
+                (script ([type "text/javascript"] [src "js/video.js?x=9"]))
                 (div ([class "bottom"])
                      (a ([class "button"] [href ,(blog-url redirect-random)]) (div ([class "center"]) (span ([class "small"]) "Source: " (br) ,(post-source-display post)) (br) "Next (random)" ,@(if (get-autoplay-cookie req) '((br) (span ([class "autoplay"]) "autoplaying random")) null)))
                      (a ([class "button"] [href ,(string-append "/next?v=" (find-next-post post))]) (div ([class "center"]) (span ([class "small"]) ,(find-next-post post)) (br) "Next (ordered)" ,@(if (get-autoplay-cookie req) null '((br) (span ([class "autoplay"]) "autoplaying next")))))
@@ -184,7 +245,8 @@
                 (div ([id "disqus_thread"] [hidden ""]))
                 (script ([type "text/javascript"] [src "js/disqus.js"]))
                 (script ([id "dsq-count-scr"] [src ,(string-append "//" forum-name ".disqus.com/count.js")] [async ""]))
-                (noscript "Please enable JavaScript to view the " (a ([href "https://disqus.com/?ref_noscript"]) "comments powered by Disqus."))))))))
+                (noscript "Please enable JavaScript to view the " (a ([href "https://disqus.com/?ref_noscript"]) "comments powered by Disqus."))
+                )))))
 
 (define/timemo list-all (#:time 1200 #:once (current-directory "htdocs") #:threader reloadable-safe-thread #:every trce*)
   (response/xexpr
@@ -195,12 +257,12 @@
          (title "All " ,plurality " - " ,list-title))
        (body
          (a ([href "/archive/gondolas.zip"]) "Download All (zip file)")
-         (p "Public API: " (a ([href ,(blog-url redirect-random)]) ,(blog-url redirect-random)) " redirects to a random " ,singular-normal ". "
+         (p (strong "Public" ) " API: " (a ([href ,(blog-url redirect-random)]) ,(blog-url redirect-random)) " redirects to a random " ,singular-normal ". "
             (a ([href ,(blog-url redirect-random-raw)]) ,(blog-url redirect-random-raw)) " redirects to a random " ,singular-normal " video stream.")
-         (p "N/A on the view count indicates high load, so the view count is not loaded. View count since 2017-09-17T18:42:49+0200")
-         (p "Video can be looped in most browsers: right-click -> loop")
-         (p "Videos normally autoplay. If you click Next (ordered) autoplay will play sequentually, if you click Next (random) autoplay will play in random order. Log: " (a ([href "/logs/log"]) "/logs/log") ", colored log (ansi color codes): " (a ([href "/logs/color-log"]) "/logs/color-log"))
-         (p ,singular " suggestions: macocio@gmail.com")
+         (p (strong "N/A") " on the view count indicates high load, so the view count is not loaded. View count since 2017-09-17T18:42:49+0200")
+         (p (strong "Videos") " can be looped in most browsers: right-click -> loop")
+         (p (strong "Videos") " normally autoplay. If you click Next (ordered) autoplay will play sequentually, if you click Next (random) autoplay will play in random order. Log: " (a ([href "/logs/log"]) "/logs/log") ", colored log (ansi color codes): " (a ([href "/logs/color-log"]) "/logs/color-log"))
+         (p (strong ,singular) " suggestions: macocio@gmail.com")
          (br)
          ,@(create-list-table)))))
 
@@ -258,6 +320,14 @@
 (define (safe-file-or-directory-modify-seconds path)
   (with-handlers ([identity (lambda e 0)])
     (file-or-directory-modify-seconds path)))
+
+(module+ test
+  (test-case "Nonexistent file"
+             (check-equal? (safe-file-or-directory-modify-seconds "nonexistent file") 0))
+  (test-case "Empty file"
+             (let ([file (make-temporary-file "rkttmp~a" #f "sources")])
+               (check-not-equal? (safe-file-or-directory-modify-seconds file) 0)
+               (delete-file file))))
 
 (define (create-list-table)
   (let-values ([(views webms) (get-all-webm-with-views-and-source)])
@@ -372,4 +442,6 @@
                   (p ([class "giant"])
                      "404")
                   (br)
-                  "not found")))))
+                  "not found"
+                  (br)
+                  (a ([href "/"]) "go back"))))))

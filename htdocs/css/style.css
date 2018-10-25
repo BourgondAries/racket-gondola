@@ -1,5 +1,9 @@
 @charset "utf-8";
+* { margin: 0; padding: 0; }
 .rainbow-block { animation: color_change 3s infinite alternate; border: thin solid; font-size: 1.2em; font-weight: bold; }
+.announcement { background: rgba(127, 0, 0, 0.5); color: white; display: none; height: auto; position: absolute; text-align: center; width: 100%; }
+body { position: absolute; }
+strong { font-weight: bold; }
 .source-table { border-right: thin solid black; display: inline-block; font-size: 0.8em; vertical-align: top; max-width: 70%; }
 .view-table { display: inline-block; font-size: 0.8em; vertical-align: top; max-width: 70%; }
 tr:nth-child(even) { background-color: #EEEEEE; }
@@ -20,3 +24,12 @@ tr:nth-child(even) { background-color: #EEEEEE; }
 .video { height: 88vh; }
 #disqus_comments { color: inherit; cursor: default; pointer-events: none; text-decoration: none; }
 #disqus_thread { background: rgba(0, 0, 0, 0.8); padding: 0 1vw 0 1vw; }
+
+@media only screen and (max-width: 768px) {
+	.announcement { font-size: 0.7em; }
+	.body { width: 100%; }
+	.button { font-size: 0.5em; }
+	.small-scroll { font-size: 0.5em; }
+	.source-table { border-right: none; font-size: 0.5em; }
+	.rainbow-block { font-size: 0.8em; }
+}
