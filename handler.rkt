@@ -51,7 +51,7 @@
   (collect-garbage 'major))
 
 (define/timemo get-all-webm (#:time 1200 #:once (current-directory "htdocs") #:threader reloadable-safe-thread #:every trce*)
-  (map path->string (directory-list "video")))
+  (filter (lambda (x) (not (string=? x ".gitignore"))) (map path->string (directory-list "video"))))
 
 (define (iffalse value proc)
   (if value
