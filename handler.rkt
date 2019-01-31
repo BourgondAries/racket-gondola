@@ -12,7 +12,7 @@
          (only-in racket/file
                   call-with-file-lock/timeout
                   make-temporary-file)
-         (only-in racket/function identity)
+         (only-in racket/function curry identity)
          (only-in racket/list
                   empty? empty first rest third second)
          (only-in racket/match match)
