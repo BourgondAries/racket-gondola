@@ -28,7 +28,7 @@ tr:nth-child(even) { background-color: #EEEEEE; }
 @media only screen and (max-width: 768px) {
 	.announcement { font-size: 0.7em; }
 	.body { width: 100%; }
-	.button { font-size: 0.5em; }
+	.button { font-size: 0.8em; }
 	.small-scroll { font-size: 0.5em; }
 	.source-table { border-right: none; font-size: 0.5em; }
 	.rainbow-block { font-size: 0.8em; }
